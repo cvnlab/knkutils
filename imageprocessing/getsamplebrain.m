@@ -26,4 +26,4 @@ if ~exist(file0,'file')
   urlwrite(sprintf('http://kendrickkay.net/knkutils/%s',sprintf('getsamplebrain%d.mat',n)),file0);
   fprintf('Downloading is done!\n');
 end
-f = double(loadmulti(file0),'samplebrain'));
+f = double(loadmulti(file0,'samplebrain'));
