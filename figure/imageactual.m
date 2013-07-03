@@ -2,21 +2,27 @@ function h = imageactual(im)
 
 % function h = imageactual(im)
 %
-% <im> is the filename of an image or an actual image.
-%   if the image is double-format, we use imagesc.m to display it;
-%   otherwise, we use image.m.
+% <im> is the filename of an image
 %
 % in the current figure, display the image specified by <im> at its 
 % native resolution (thus, avoiding downsampling or upsampling).
 % this is accomplished by changing the position and size of the current
 % figure and its axes.  return the handle of the created image.
 %
+% note that if <im> is an indexed image and does not have an 
+% associated colormap, then we default to the colormap gray(256).
+%
+% history:
+% - 2013/07/02 - change functionality and clean up
+%
 % example:
-% figure; imageactual(getsampleimage);
+% imwrite(uint8(255*rand(100,100,3)),'temp.png');
+% figure; imageactual('temp.png');
 
 % read image
-if ischar(im)
-  im = imread(im);
+[im,cmap] = imread(im);
+if isempty(cmap)
+  cmap = gray(256);
 end
 
 % calc
@@ -34,14 +40,8 @@ set(gcf,'Position',[newx newy c/1.25 r/1.25]);
 set(gca,'Position',[0 0 1 1]);
 
 % draw image and set axes
-if isa(im,'double')
-  h = imagesc(im);
-else
-  % for some reason, if the image is grayscale, image.m uses only the range 0 to 63 (i think).
-  % so, let's just force it to be color.
-  if size(im,3)==1
-    im = repmat(im,[1 1 3]);
-  end
-  h = image(im);
+h = image(im);
+if size(im,3) ~= 3
+  colormap(cmap);
 end
 axis equal tight off;
