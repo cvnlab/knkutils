@@ -1,12 +1,12 @@
 function [timeframes,timekeys,digitrecord,trialoffsets] = ...
   ptviewmovie(images,frameorder,framecolor,frameduration,fixationorder,fixationcolor,fixationsize, ...
               grayval,detectinput,wantcheck,offset,moviemask,movieflip,scfactor,allowforceglitch, ...
-              triggerfun,framefiles,frameskip,triggerkey,specialcon,trialtask)
+              triggerfun,framefiles,frameskip,triggerkey,specialcon,trialtask,maskimages,specialoverlay)
 
 % function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   ptviewmovie(images,frameorder,framecolor,frameduration,fixationorder,fixationcolor,fixationsize, ...
 %               grayval,detectinput,wantcheck,offset,moviemask,movieflip,scfactor,allowforceglitch, ...
-%               triggerfun,framefiles,frameskip,triggerkey,specialcon,trialtask)
+%               triggerfun,framefiles,frameskip,triggerkey,specialcon,trialtask,maskimages,specialoverlay)
 % 
 % <images> is a .mat file with 'images' as a uint8
 %   A x B x 1/3 x N matrix with different images along the fourth dimension.  
@@ -28,7 +28,12 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   3 x N.  in this case, the first row is the usual format and the second
 %   and third rows provide arguments to circshift (thus, they should be
 %   integer values).  this input format allows circular shifting
-%   of the images just prior to presentation.
+%   of the images just prior to presentation.  another special case is a matrix
+%   of dimensions 2 x N.  in this case, the first row is the usual format and
+%   the second row is a vector of positive integers referring to specific
+%   masks in <maskimages>.  (for entries where the first row is 0, just pass in
+%   0 in the second row.)  this input format allows for a mask to be applied
+%   to images in <images>.
 % <framecolor> (optional) is size(<frameorder>,2) x 3 with values in [0,255].
 %   each row indicates a multiplication on color channels to apply for a 
 %   given frame.  default is 255*ones(size(<frameorder>,2),3) which means 
@@ -200,6 +205,16 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   if supplied, we randomly choose trials to present a dot and during those trials we 
 %   present the dot at a random location and at a random point in time.
 %   if [] or not supplied, do nothing special.
+% <maskimages> (optional) is a .mat file with 'maskimages' as a double A x B x M matrix
+%   with different masks along the third dimension.  can be a cell vector, in which case
+%   we just concatenate all masks together (the A and B dimensions should be consistent
+%   across cases).  masks are referred to by their index (1-indexed).  <maskimages> can
+%   also be the double matrix directly.  <maskimages> can also be a cell vector of
+%   double elements, each of which is A x B x M.  masks should have values in [0,1] where
+%   1 means pass, 0 means show background, and fractional values allow blending.
+% <specialoverlay> (optional) is a uint8 image matrix with four channels along the third
+%   dimension (the last gives the alpha channel).  if supplied, this is an image that gets
+%   drawn on top of the stimulus but below the fixation.
 %
 % return <timeframes> as a 1 x size(<frameorder>,2) vector with the time of each frame showing.
 %   (time is relative to the time of the first frame.)
@@ -251,6 +266,8 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   So it is important to test your particular setup!
 %
 % history:
+% 2013/08/18 - add input <specialoverlay>.  add another special case 
+%              for <frameorder>.  add <maskimages>.  tweak the call to sound.m.
 % 2013/05/18 - allow trialtask{8} to be a negative number
 % 2013/05/14 - digitrecord is now returned as a cell vector; fixationorder can allow an existing digitrecord
 % 2013/05/14 - allow <frameorder> to be a matrix; trialtask can allow an existing trialoffsets
@@ -283,9 +300,6 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 % - using "don't clear" in flip was causing problems.
 
 % input
-if ischar(images)
-  images = {images};
-end
 if ~exist('frameorder','var') || isempty(frameorder)
   frameorder = [];  % deal with later
 end
@@ -346,6 +360,18 @@ end
 if ~exist('trialtask','var') || isempty(trialtask)
   trialtask = [];
 end
+if ~exist('maskimages','var') || isempty(maskimages)
+  maskimages = [];
+end
+if ~exist('specialoverlay','var') || isempty(specialoverlay)
+  specialoverlay = [];
+end
+if ischar(images)
+  images = {images};
+end
+if ischar(maskimages)
+  maskimages = {maskimages};
+end
 if size(fixationsize,1) == 1 && length(fixationsize) == 1
   fixationsize = [fixationsize 0];
 end
@@ -392,6 +418,27 @@ end
 assert(isa(images,'uint8') || all(cellfun(@(x) isa(x,'uint8'),images)));  % check sanity
 fprintf('loading images: done\n');
 
+% load in the maskimages
+if iscell(maskimages) && ischar(maskimages{1})
+  fprintf('loading maskimages: starting...\n');
+  moviefile = maskimages;
+  maskimages = [];
+  for p=1:length(moviefile)
+    temp = load(moviefile{p},'maskimages');
+    maskimages = cat(3,maskimages,temp.maskimages);
+  end
+  clear temp;
+  fprintf('loading maskimages: done\n');
+end
+
+% concatenate all maskimages together
+if iscell(maskimages)
+  maskimages = cat(3,maskimages{:});
+end
+
+% convert maskimages to uint8 alpha images
+maskimages = uint8(255*maskimages);
+
 % deal with mask
 if ~isempty(moviemask)
   fprintf('applying mask: starting...\n');
@@ -414,16 +461,13 @@ end
 
 % deal with movieflip
 if movieflip(1) && movieflip(2)
-  wantflipfun = 1;
   flipfun = @(x) flipdim(flipdim(x,1),2);
 elseif movieflip(1)
-  wantflipfun = 1;
   flipfun = @(x) flipdim(x,1);
 elseif movieflip(2)
-  wantflipfun = 1;
   flipfun = @(x) flipdim(x,2);
 else
-  wantflipfun = 0;
+  flipfun = @(x) x;
 end
 
 %%%%%%%%%%%%%%%%% PREP
@@ -459,9 +503,6 @@ end
 if isempty(fixationorder)
   fixationorder = ones(1,1+size(frameorder,2)+1);
 end
-if size(frameorder,1)==1
-  frameorder([2 3],:) = 0;
-end
 
 % prepare movierect and fixationrect
 movierect = CenterRect([0 0 round(scfactor*d2images) round(scfactor*d1images)],rect) + [offset(1) offset(2) offset(1) offset(2)];
@@ -469,6 +510,9 @@ if size(fixationsize,1) == 1  % dot case
   fixationrect = CenterRect([0 0 2*fixationsize(1) 2*fixationsize(1)],rect) + [offset(1) offset(2) offset(1) offset(2)];  % allow doubling of fixationsize for room for anti-aliasing
 else  % image case
   fixationrect = CenterRect([0 0 size(fixationsize,2) size(fixationsize,1)],rect) + [offset(1) offset(2) offset(1) offset(2)];
+end
+if ~isempty(specialoverlay)
+  overlayrect = CenterRect([0 0 size(specialoverlay,2) size(specialoverlay,1)],rect) + [offset(1) offset(2) offset(1) offset(2)];
 end
 
 % prepare fixation image
@@ -550,6 +594,11 @@ end
 fixationimage = flipdims(fixationimage,movieflip);
 fixationalpha = flipdims(fixationalpha,movieflip);
 
+% now deal with flipping of overlay stuff
+if ~isempty(specialoverlay)
+  specialoverlay = flipdims(specialoverlay,movieflip);
+end
+
 % prepare window for alpha blending
 Screen('BlendFunction',win,GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 
@@ -567,18 +616,21 @@ mfi = Screen('GetFlipInterval',win);  % re-use what was found upon initializatio
 filtermode = choose(scfactor==1,0,1);
 getoutearly = 0;
 glitchcnt = 0;
-sound(0,1);
+sound(zeros(1,100),100);
 
 % precomputations for case when images is a cell of uint8
 iscellimages = iscell(images);
 if iscellimages
-  whs = zeros(size(frameorder,2),4);
+  whs = zeros(size(frameorder,2),1+size(frameorder,1));
   for frame=1:size(frameorder,2)
     if frameorder(1,frame) ~= 0
       whs(frame,1) = firstel(find(frameorder(1,frame) <= csimages));
       whs(frame,2) = size(images{whs(frame,1)},dimwithim) - (csimages(whs(frame,1))-frameorder(1,frame));
-      whs(frame,3) = frameorder(2,frame);
-      whs(frame,4) = frameorder(3,frame);
+      if size(frameorder,1)==2
+        whs(frame,3) = frameorder(2,frame);
+      elseif size(frameorder,1)==3
+        whs(frame,3:4) = frameorder(2:3,frame);
+      end
     end
   end
 end
@@ -715,8 +767,13 @@ end
 
 %%%%%%%%%%%%%%%%% START THE EXPERIMENT
 
-% draw the background and fixation
+% draw the background, overlay, and fixation
 Screen('FillRect',win,grayval,rect);
+if ~isempty(specialoverlay)
+  texture = Screen('MakeTexture',win,specialoverlay);
+  Screen('DrawTexture',win,texture,[],overlayrect,[],0);
+  Screen('Close',texture);
+end
 if iscell(fixationorder)
   texture = Screen('MakeTexture',win,cat(3,fixationimage(:,:,:,1),fixationalpha(:,:,1)));
 else
@@ -809,32 +866,45 @@ for frame=1:frameskip:size(frameorder,2)+1
   else
     if iscellimages
       if dimwithim==4   % THIS IS VERY VERY UGLY
-        if wantflipfun
-          texture = Screen('MakeTexture',win,feval(flipfun, ...
-            circshift(images{whs(frame0,1)}(:,:,:,whs(frame0,2)),whs(frame0,3:4))));
-        else
-          texture = Screen('MakeTexture',win, ...
-            circshift(images{whs(frame0,1)}(:,:,:,whs(frame0,2)),whs(frame0,3:4)));
+        switch size(whs,2)
+        case 2
+          txttemp = feval(flipfun,images{whs(frame0,1)}(:,:,:,whs(frame0,2)));
+        case 3
+          txttemp = feval(flipfun,cat(3,images{whs(frame0,1)}(:,:,:,whs(frame0,2)),maskimages(:,:,whs(frame0,3))));
+        case 4
+          txttemp = feval(flipfun,circshift(images{whs(frame0,1)}(:,:,:,whs(frame0,2)),whs(frame0,3:4)));
         end
+        texture = Screen('MakeTexture',win,txttemp);
       else
-        if wantflipfun
-          texture = Screen('MakeTexture',win,feval(flipfun, ...
-            circshift(images{whs(frame0,1)}(:,:,whs(frame0,2)),whs(frame0,3:4))));
-        else
-          texture = Screen('MakeTexture',win, ...
-            circshift(images{whs(frame0,1)}(:,:,whs(frame0,2)),whs(frame0,3:4)));
+        switch size(whs,2)
+        case 2
+          txttemp = feval(flipfun,images{whs(frame0,1)}(:,:,whs(frame0,2)));
+        case 3
+          txttemp = feval(flipfun,cat(3,images{whs(frame0,1)}(:,:,whs(frame0,2)),maskimages(:,:,whs(frame0,3))));
+        case 4
+          txttemp = feval(flipfun,circshift(images{whs(frame0,1)}(:,:,whs(frame0,2)),whs(frame0,3:4)));
         end
+        texture = Screen('MakeTexture',win,txttemp);
       end
     else
-      if wantflipfun
-        texture = Screen('MakeTexture',win,feval(flipfun, ...
-          circshift(images(:,:,:,frameorder(1,frame0)),frameorder(2:3,frame0)')));
-      else
-        texture = Screen('MakeTexture',win, ...
-          circshift(images(:,:,:,frameorder(1,frame0)),frameorder(2:3,frame0)'));
+      switch size(frameorder,1)
+      case 1
+        txttemp = feval(flipfun,images(:,:,:,frameorder(1,frame0)));
+      case 2
+        txttemp = feval(flipfun,cat(3,images(:,:,:,frameorder(1,frame0)),maskimages(:,:,frameorder(2,frame0))));
+      case 3
+        txttemp = feval(flipfun,circshift(images(:,:,:,frameorder(1,frame0)),frameorder(2:3,frame0)'));
       end
+      texture = Screen('MakeTexture',win,txttemp);
     end
     Screen('DrawTexture',win,texture,[],movierect,0,filtermode,1,framecolor(frame0,:));
+    Screen('Close',texture);
+  end
+  
+  % draw the overlay
+  if ~isempty(specialoverlay)
+    texture = Screen('MakeTexture',win,specialoverlay);
+    Screen('DrawTexture',win,texture,[],overlayrect,0,0);
     Screen('Close',texture);
   end
   
@@ -967,8 +1037,13 @@ for frame=1:frameskip:size(frameorder,2)+1
   
 end
 
-% draw the background and fixation
+% draw the background, overlay, and fixation
 Screen('FillRect',win,grayval,rect);
+if ~isempty(specialoverlay)
+  texture = Screen('MakeTexture',win,specialoverlay);
+  Screen('DrawTexture',win,texture,[],overlayrect,[],0);
+  Screen('Close',texture);
+end
 if iscell(fixationorder)
   texture = Screen('MakeTexture',win,cat(3,fixationimage(:,:,:,1),fixationalpha(:,:,1)));
 else
