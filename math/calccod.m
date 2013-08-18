@@ -46,6 +46,7 @@ function f = calccod(x,y,dim,wantgain,wantmeansub)
 %   calccod([],[]) is []
 %
 % history:
+% 2013/08/18 - fix pernicious case where <x> is all zeros and <wantgain> is 1 or 2.
 % 2010/11/28 - add <wantgain>==2 case
 % 2010/11/23 - changed the output range to percentages.  thus, the range is (-Inf,100].
 %              also, we removed the <wantr> input since it was dumb.
@@ -82,11 +83,7 @@ if dim==0
   dim = 1;
 end
 
-% propagate NaNs (i.e. ignore invalid data points)
-x(isnan(y)) = NaN;
-y(isnan(x)) = NaN;
-
-% do it
+% handle gain
 if wantgain
   % to get the residuals, we want to do something like y-x*inv(x'*x)*x'*y
   temp = 1./dot(x,x,dim) .* dot(x,y,dim);
@@ -95,11 +92,19 @@ if wantgain
   end
   x = bsxfun(@times,x,temp);
 end
+
+% propagate NaNs (i.e. ignore invalid data points)
+x(isnan(y)) = NaN;
+y(isnan(x)) = NaN;
+
+% handle mean subtraction
 if wantmeansub
   mn = nanmean(y,dim);
   y = bsxfun(@minus,y,mn);
   x = bsxfun(@minus,x,mn);
 end
+
+% finally, compute it
 f = 100*(1 - zerodiv(nansum((y-x).^2,dim),nansum(y.^2,dim),NaN,0));
 
 
