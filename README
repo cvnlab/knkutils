@@ -10,6 +10,8 @@ in your MATLAB startup.m file.
 Below we document major code changes.  Minor code changes and tweaks that have no significant impact are not mentioned here (e.g. things like cosmetic adjustments, code speed-ups, making functions more general by adding optional input arguments, fixing bugs that would have result in code crashes, etc.).  Major changes include things that make the code backwards-incompatible and things that change actual analysis results.
 
 History of major code changes:
+2013/08/18 - in makedirid.m, occurrences of '-' are now replaced with '_'
+2013/08/18 - in projectionmatrix.m, in the cases of empty <X>, we now return 1 instead of [].
 2012/06/14 - in constructpolynomialmatrix2d.m and constructpolynomialmatrix3d.m, we now sort the char representation of the basis functions.  the reason is that previously, different machine architectures would give different orders for the basis functions.  this is horrible, as it means that different machines would have different parameter orders.  the fix (which hopefully is robust) is to sort the basis function character-wise, explicitly.  please be aware of this change!
 2012/01/23 - in viewimage.m, no longer make a new window and no longer return the figure number
 2011/12/10 - in applymultiscalegaussianfilters.m, we now make the default mode to be 0 (center on pixels).  this changes previous behavior.
@@ -140,6 +142,7 @@ programming/
   mkdirquiet - make a directory, suppressing warnings
   mtimesmulti - multiply arguments together
   passmulti - pass multiple arguments to a function from a cell vector
+  pause2 - pause but also return an output
   playalarm - play an alarm to get the user's attention
   plusmulti - add arguments together
   processchunks - perform an operation on successive chunks of a big matrix to save on memory usage
@@ -212,6 +215,7 @@ math/
   mtimescell - do matrix multiplication but with an argument split into a cell vector
   nanreplace - replace NaNs with a specified value
   nantoclosest - replace NaNs with the nearest valid values
+  negrect - negative-rectify
   negreplace - replace negative values with a specified value
   normalizerange - scale to fit within a specific range
   normalizemax - scale such that max value is 1
@@ -269,6 +273,8 @@ stats/
   fitgaussian3d - fit 3D Gaussian function
   fitl1line - perform linear regression but use an L1-error metric 
   fitline2derror - fit a line to a set of 2D points using an error metric that is sensitive to both x and y
+  fitnonlinearmodel - a useful wrapper around MATLAB's lsqcurvefit.m function
+  fitnonlinearmodel_helper - a helper function for fitnonlinearmodel.m
   fitrbfpdf - fit a simplified mixture-of-Gaussians probability density function model using k-means
   fitrectpdf - fit a rectified squared model using k-means and interpret as a PDF
   fitrectdensity - fit a rectified squared model using k-means and interpret more like ANN
@@ -427,9 +433,12 @@ graphic/
   drawcheckerboards - draw a set of oriented checkerboards
   drawclosedcontour - draw a generic closed contour shape
   drawclosedcontours - render several closed contours
+  drawdartboard - draw a radial checkerboard (dartboard)
   drawellipse - draw a complete or partial ellipse (includes circles and arcs as special cases)
+  drawmultiscale - place objects at multiple scales on a pink-noise background
   drawpolargrid - draw a polar grid consisting of rings and spokes
   drawrectangle - draw a rectangle
+  drawsector - draw a sector
   drawtext - draw a word
   drawtexts - render several words
   renderfigure - render the current figure into an image (assumed to be square)
