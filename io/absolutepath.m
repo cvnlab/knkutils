@@ -7,9 +7,9 @@ function f = absolutepath(x)
 %
 % return the absolute path to the file.
 % we rely on pwd to figure out the path.
+% note: the file does not actually have to exist.
 %
 % example:
-% unix('touch temp');
 % absolutepath('temp')
 
 % find any /
