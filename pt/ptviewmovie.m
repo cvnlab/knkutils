@@ -187,14 +187,16 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %       for a consecutive string of 1s indicating the duration of the trial.  
 %       trials should be mutually exclusive with respect to frames.
 %     B is the fraction of trials (on average) that should present a dot.  we randomly flip a coin
-%       for each trial to decide whether a dot is presented on that trial.
+%       for each trial to decide whether a dot is presented on that trial.  if negative, then
+%       we enforce the fact that a dot cannot be presented on two successive trials.
 %     C is a cell vector of elements. each element should be a 2 x V matrix, each column 
 %       indicating a valid location for the dot.  the units should be signed x- and y-coordinates 
 %       in pixel units and is to be interpreted relative to the fixation location.  note that
 %       these locations (and the <trialtask> stuff) are not affected by <movieflip>.
 %     D is a vector 1 x T with the mapping from trials to the elements of C.
 %     E is a uint8 vector of dimensions 1 x 3, indicating the color to use for the dot.
-%     F is the size in pixels for the dot.
+%     F is the size in pixels for the dot.  if negative, then when using <maskimages>, the
+%       dot is restricted to be within the mask.
 %     G is a non-negative number in [0,1] indicating the alpha value to use for the dot.
 %     H is the positive number of frames to show the dot for.  should be less than or equal to
 %       the shortest trial in A.  can also be a negative number, in which case we only start
@@ -266,6 +268,8 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   So it is important to test your particular setup!
 %
 % history:
+% 2013/08/20 - implement negative case for B of <trialtask>,
+%              implement negative case for F of <trialtask>.
 % 2013/08/18 - add input <specialoverlay>.  add another special case 
 %              for <frameorder>.  add <maskimages>.  tweak the call to sound.m.
 % 2013/05/18 - allow trialtask{8} to be a negative number
@@ -586,8 +590,8 @@ end
 
 % prepare trial image
 if ~isempty(trialtask)
-  trialimage = repmat(reshape(trialtask{5},1,1,[]),[2*trialtask{6} 2*trialtask{6}]);
-  trialalpha = uint8(trialtask{7} * (255*makecircleimage(2*trialtask{6},trialtask{6}/2)));
+  trialimage = repmat(reshape(trialtask{5},1,1,[]),[2*abs(trialtask{6}) 2*abs(trialtask{6})]);
+  trialalpha = uint8(trialtask{7} * (255*makecircleimage(2*abs(trialtask{6}),abs(trialtask{6})/2)));
 end
 
 % now deal with flipping of fixation stuff
@@ -745,7 +749,29 @@ if ~isempty(trialtask)
   else
     numtrials = size(trialtask{1},1);
     numframes = size(trialtask{1},2);
-    dotrials = find(rand(1,numtrials) <= trialtask{2});  % indices of trials to show a dot on
+    
+    % easy case (consecutive is okay)
+    if trialtask{2} > 0
+      dotrials = find(rand(1,numtrials) <= trialtask{2});  % indices of trials to show a dot on
+
+    % hard case (consecutive is not okay)
+    else
+      dotrials = zeros(1,numtrials);
+      lastdo = 0;
+      cnt = 1;
+      while cnt <= numtrials
+        if lastdo
+          lastdo = 0;
+          cnt = cnt + 1;
+        else
+          dotrials(cnt) = rand <= -trialtask{2};
+          lastdo = dotrials(cnt);
+          cnt = cnt + 1;
+        end
+      end
+      dotrials = find(dotrials);
+    end
+    
     trialoffsets = NaN*zeros(2,numframes);  % compute x- and y-offsets for each frame
     for pp=1:length(dotrials)
       dotframes = find(trialtask{1}(dotrials(pp),:));  % indices of frames to show the dot on
@@ -859,6 +885,7 @@ for frame=1:frameskip:size(frameorder,2)+1
   end
 
   % if special 0 case, just fill with gray
+  MI = [];
   if frameorder(1,frame0) == 0
     Screen('FillRect',win,grayval,movierect);
 
@@ -870,7 +897,8 @@ for frame=1:frameskip:size(frameorder,2)+1
         case 2
           txttemp = feval(flipfun,images{whs(frame0,1)}(:,:,:,whs(frame0,2)));
         case 3
-          txttemp = feval(flipfun,cat(3,images{whs(frame0,1)}(:,:,:,whs(frame0,2)),maskimages(:,:,whs(frame0,3))));
+          MI = maskimages(:,:,whs(frame0,3));
+          txttemp = feval(flipfun,cat(3,images{whs(frame0,1)}(:,:,:,whs(frame0,2)),MI));
         case 4
           txttemp = feval(flipfun,circshift(images{whs(frame0,1)}(:,:,:,whs(frame0,2)),whs(frame0,3:4)));
         end
@@ -880,7 +908,8 @@ for frame=1:frameskip:size(frameorder,2)+1
         case 2
           txttemp = feval(flipfun,images{whs(frame0,1)}(:,:,whs(frame0,2)));
         case 3
-          txttemp = feval(flipfun,cat(3,images{whs(frame0,1)}(:,:,whs(frame0,2)),maskimages(:,:,whs(frame0,3))));
+          MI = maskimages(:,:,whs(frame0,3));
+          txttemp = feval(flipfun,cat(3,images{whs(frame0,1)}(:,:,whs(frame0,2)),MI));
         case 4
           txttemp = feval(flipfun,circshift(images{whs(frame0,1)}(:,:,whs(frame0,2)),whs(frame0,3:4)));
         end
@@ -891,7 +920,8 @@ for frame=1:frameskip:size(frameorder,2)+1
       case 1
         txttemp = feval(flipfun,images(:,:,:,frameorder(1,frame0)));
       case 2
-        txttemp = feval(flipfun,cat(3,images(:,:,:,frameorder(1,frame0)),maskimages(:,:,frameorder(2,frame0))));
+        MI = maskimages(:,:,frameorder(2,frame0));
+        txttemp = feval(flipfun,cat(3,images(:,:,:,frameorder(1,frame0)),MI));
       case 3
         txttemp = feval(flipfun,circshift(images(:,:,:,frameorder(1,frame0)),frameorder(2:3,frame0)'));
       end
@@ -933,12 +963,43 @@ for frame=1:frameskip:size(frameorder,2)+1
   % draw the trial task dot
   if ~isempty(trialtask)
     if ~all(isnan(trialoffsets(:,frame0)))
-      trialrect = CenterRect([0 0 2*trialtask{6} 2*trialtask{6}],rect) + ...
+      trialrect = CenterRect([0 0 2*abs(trialtask{6}) 2*abs(trialtask{6})],rect) + ...
                   [offset(1) offset(2) offset(1) offset(2)] + ...
                   repmat(trialoffsets(:,frame0)' .* [1 -1],[1 2]);
                   % multiply y-coordinate by -1 because in PT, positive means down
-      texture = Screen('MakeTexture',win,cat(3,trialimage,trialalpha));
-      Screen('DrawTexture',win,texture,[],trialrect,0,0);
+
+      %%%% voodoo detour: restrict the trial task dot to the mask, if there is one
+
+      % this is the easy case.
+      % if there is no mask happening OR if the trialtask{6} is positive,
+      % then do the regular thing.
+      if isempty(MI) || trialtask{6} > 0
+        texture = Screen('MakeTexture',win,cat(3,trialimage,trialalpha));
+        Screen('DrawTexture',win,texture,[],trialrect,0,0);
+
+      % this is the hard case.
+      else
+        movierect0 = ceil(movierect);  % this rect is the master mask (the stimulus)
+        trialrect0 = ceil(trialrect);  % this rect is the trial task dot mask
+        rect0 = ClipRect(movierect0,trialrect0);  % this is the intersection
+          % extract from the master alpha
+        extractMA =         MI(rect0(2)-movierect0(2) + (1:(rect0(4)-rect0(2))), ...
+                               rect0(1)-movierect0(1) + (1:(rect0(3)-rect0(1))));
+          % extract from the trial image
+        extractTI = trialimage(rect0(2)-trialrect0(2) + (1:(rect0(4)-rect0(2))), ...
+                               rect0(1)-trialrect0(1) + (1:(rect0(3)-rect0(1))),:);
+          % extract from the trial alpha
+        extractTA = trialalpha(rect0(2)-trialrect0(2) + (1:(rect0(4)-rect0(2))), ...
+                               rect0(1)-trialrect0(1) + (1:(rect0(3)-rect0(1))));
+          % construct the final alpha
+        extractFA = uint8((double(extractMA)/255) .* double(extractTA));
+          % proceed
+        texture = Screen('MakeTexture',win,cat(3,extractTI,extractFA));
+        Screen('DrawTexture',win,texture,[],rect0,0,0);
+      end
+      
+      %%%% end voodoo
+      
       Screen('Close',texture);
     end
   end
