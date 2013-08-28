@@ -12,12 +12,14 @@ ismultiplemodels = length(opt.model) > 1;
 
 % init
 results = struct;
-results.params = zeros(length(trainfun),size(opt.model{end}{1},2));
+results.params = zeros(length(trainfun),size(opt.model{end}{2},2));
 results.testdata =  cell(1,length(trainfun));  % but converted to a matrix at the end
 results.modelpred = cell(1,length(trainfun));  % but converted to a matrix at the end
 results.trainperformance = zeros(1,length(trainfun));
 results.testperformance =  zeros(1,length(trainfun));
 results.aggregatedtestperformance = [];
+results.numiters = zeros(length(trainfun),size(opt.model{1}{1},1),length(opt.model));
+results.resnorms = zeros(length(trainfun),size(opt.model{1}{1},1));
 
 % loop over resampling cases
 for rr=1:length(trainfun)
@@ -35,6 +37,13 @@ for rr=1:length(trainfun)
 
   % precompute
   traindataT = trainT*traindata;  % remove regressors from data (fitting)
+  
+  % deal with last-minute data division
+  datastd = std(traindataT);
+  if datastd == 0
+    datastd = 1;
+  end
+  traindataT = traindataT / datastd;
 
   % deal with options
   options = opt.optimoptions;
@@ -47,7 +56,6 @@ for rr=1:length(trainfun)
   end
 
   % loop over seeds
-  resnorms = [];
   params = [];
   for ss=1:size(opt.model{1}{1},1)
     if ismultipleseeds
@@ -102,25 +110,28 @@ for rr=1:length(trainfun)
         fprintf('      the seed is ['); fprintf('%.3f ',seed); fprintf('].\n');
       end
 
-      % perform the fit (NOTICE THE NAN PROTECTION)
+      % perform the fit (NOTICE THE DIVISION BY DATASTD AND THE NAN PROTECTION)
       [params0,resnorm,residual,exitflag,output] = ...
-        lsqcurvefit(@(x,y) nanreplace(feval(fun,x),0,2),seed(ix),[],traindataT,lb,ub,options);
+        lsqcurvefit(@(x,y) nanreplace(feval(fun,x) / datastd,0,2),seed(ix),[],traindataT,lb,ub,options);
       params0 = copymatrix(seed,ix,params0);
 
       % report
       fprintf('      the estimated parameters are ['); ...
         fprintf('%.3f ',params0); fprintf('].\n');
+      
+      % record
+      results.numiters(rr,ss,mm) = output.iterations;
 
     end
     
     % record
-    resnorms(ss) = resnorm;  % final resnorm
+    results.resnorms(rr,ss) = resnorm;  % final resnorm
     params(ss,:) = params0;  % final parameters
 
   end
 
   % which seed produced the best results?
-  [d,mnix] = min(resnorms);
+  [d,mnix] = min(results.resnorms(rr,:));
   finalparams = params(mnix,:);
   
   % record the results

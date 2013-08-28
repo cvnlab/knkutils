@@ -67,6 +67,7 @@ function results = fitnonlinearmodel(opt,chunksize,chunknum)
 %                'MaxFunEvals',Inf,'MaxIter',Inf, ...
 %                'TolFun',1e-6,'TolX',1e-6, ...
 %                'OutputFcn',@(a,b,c) outputfcnsanitycheck(a,b,c,1e-6,10))
+%     In particular, it may be useful to specify a specific optimization algorithm to use.
 %   <outputfcn> (optional) is a function suitable for use as an 'OutputFcn'.  If you
 %     supply <outputfcn>, it will take precedence over any 'OutputFcn' in <optimoptions>.
 %     The reason for <outputfcn> is that the data points being fitted will be passed as a
@@ -119,9 +120,10 @@ function results = fitnonlinearmodel(opt,chunksize,chunknum)
 %
 %   *** OUTPUT-RELATED ***
 %   <dontsave> (optional) is a string or a cell vector of strings indicating outputs
-%     to omit when returning.  For example, you may want to omit 'testdata' and
-%     'modelpred' since they may use a lot of memory.  Default is [] which means 
-%     to return everything.
+%     to omit when returning.  For example, you may want to omit 'testdata', 'modelpred',
+%     'numiters', and 'resnorms' since they may use a lot of memory.  If [] or not
+%     supplied, then we use the default of {'numiters' 'resnorms'}.  If {}, then we 
+%     will return all outputs.
 %
 % <chunksize> (optional) is the number of voxels to process in a single function call.
 %   The default is to process all voxels.
@@ -153,6 +155,12 @@ function results = fitnonlinearmodel(opt,chunksize,chunknum)
 %     This is the aggregated testing data across the resampling schemes.
 % - 'modelpred' is time points x voxels.
 %     This is the aggregated model predictions across the resampling schemes.
+% - 'numiters' is a cell vector of dimensions 1 x voxels.  Each element is
+%     is resampling cases x seeds x models.  These are the numbers of iterations
+%     used in the optimizations.
+% - 'resnorms' is a cell vector of dimensions 1 x voxels.  Each element is
+%     is resampling cases x seeds.  These are the residual norms obtained
+%     in the optimizations.  This is useful for diagnosing multiple-seed issues.
 %
 % Notes:
 % - Since we use %06d.mat to name output files, you should use no more than 999,999 chunks.
@@ -161,8 +169,14 @@ function results = fitnonlinearmodel(opt,chunksize,chunknum)
 %   by making it such that the prediction for a given data point is calculated as the
 %   average of the predicted responses for the individual stimulus frames associated with
 %   that data point.
+% - To control the scale of the computations, in the optimization call we divide the 
+%   data by its standard deviation and apply the exact same scaling to the model.  This
+%   has the effect of controlling the scale of the residuals.  This last-minute scaling 
+%   should have no effect on the final parameter estimates.
 %
 % History:
+% - 2013/08/28 - new outputs 'resnorms' and 'numiters'; last-minute data scaling; 
+%                tweak default handling of 'dontsave'
 % - 2013/08/18 - Initial version.
 %
 % Example 1:
@@ -221,13 +235,13 @@ stime = clock;  % start time
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% SETUP
 
-% is <data> of case (4)?
-isvxscase = isa(opt.data,'function_handle') && nargin(opt.data) > 0;
-
 % deal with opt
 if ischar(opt)
   opt = loadmulti(opt,'opt');
 end
+
+% is <data> of case (4)?
+isvxscase = isa(opt.data,'function_handle') && nargin(opt.data) > 0;
 
 % deal with outputdir
 if ~isfield(opt,'outputdir') || isempty(opt.outputdir)
@@ -394,8 +408,8 @@ end
 if ~isfield(opt,'wantremoveextra') || isempty(opt.wantremoveextra)
   opt.wantremoveextra = 1;
 end
-if ~isfield(opt,'dontsave') || isempty(opt.dontsave)
-  opt.dontsave = {};
+if ~isfield(opt,'dontsave') || (isempty(opt.dontsave) && ~iscell(opt.dontsave))
+  opt.dontsave = {'numiters' 'resnorms'};
 end
 if ~iscell(opt.dontsave)
   opt.dontsave = {opt.dontsave};
@@ -426,7 +440,7 @@ end
 % deal with stimulus
 if isa(opt.stimulus,'function_handle')
   fprintf('*** fitnonlinearmodel: loading stimulus. ***\n');
-  stimulus = feval(stimulus);
+  stimulus = feval(opt.stimulus);
 else
   stimulus = opt.stimulus;
 end
@@ -560,6 +574,8 @@ results.modelpred = cat(2,results0.modelpred);
 results.trainperformance = cat(1,results0.trainperformance).';
 results.testperformance  = cat(1,results0.testperformance).';
 results.aggregatedtestperformance = cat(2,results0.aggregatedtestperformance);
+results.numiters = cat(2,{results0.numiters});
+results.resnorms = cat(2,{results0.resnorms});
 
 % kill unwanted outputs
 for p=1:length(opt.dontsave)
