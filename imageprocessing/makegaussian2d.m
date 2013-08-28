@@ -25,6 +25,9 @@ function [f,xx,yy] = makegaussian2d(res,r,c,sr,sc,xx,yy,ang,omitexp)
 % note that it doesn't matter if <sr> or <sc> are negative, since they 
 % are always squared in function evaluation.
 %
+% history:
+% - 2013/08/28 - implement speed-up
+%
 % example:
 % figure; imagesc(makegaussian2d(32,8,8,4,2),[0 1]);
 
@@ -48,8 +51,10 @@ if ~exist('xx','var') || isempty(xx)
 end
 
 % convert to the unit coordinate frame
-r = normalizerange(r,.5,-.5,.5,res+.5,0,0,1);  % note the signs
-c = normalizerange(c,-.5,.5,.5,res+.5,0,0,1);
+  % r = normalizerange(r,.5,-.5,.5,res+.5,0,0,1);  % note the signs
+  % c = normalizerange(c,-.5,.5,.5,res+.5,0,0,1);
+r = (-1/res) * r + (.5 + .5/res);  % this is faster
+c = (1/res) * c + (-.5 - .5/res);  % this is faster
 sr = sr/res;
 sc = sc/res;
 
