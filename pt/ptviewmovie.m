@@ -620,7 +620,7 @@ mfi = Screen('GetFlipInterval',win);  % re-use what was found upon initializatio
 filtermode = choose(scfactor==1,0,1);
 getoutearly = 0;
 glitchcnt = 0;
-sound(zeros(1,100),100);
+sound(zeros(1,100),1000);
 
 % precomputations for case when images is a cell of uint8
 iscellimages = iscell(images);
