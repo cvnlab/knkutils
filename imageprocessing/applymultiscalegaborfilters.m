@@ -47,7 +47,7 @@ function [f,gbrs,gaus,sds,indices,info,filters] = applymultiscalegaborfilters(im
 %           (100% contrast, with values in [-.5,.5]) is equal to 1.  thus, if a response
 %           to an image is .3, the equivalent Michelson contrast is simply 30%.
 % <mode> is
-%   0 means dot-product
+%   0 means dot-product [this is recommended]
 %   1 means squared distance over each filter's extent, divided by number of pixels.
 %     special case is -1 which means ignore mean in the X'X term when calculating distance.
 %   2 means squared distance over entire image
