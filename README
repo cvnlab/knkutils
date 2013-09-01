@@ -375,6 +375,7 @@ imageprocessing/
   processmulti - apply a function that expects a single image to multiple images
   scrambleimage - scramble an image, preserving chunks of a certain size
   smoothvolumes - use a Gaussian filter to smooth one or more 3D volumes
+  socmodel - compute the response of the SOC model to some stimuli
   splitimages - split images into chunks
   unitlengthfft2 - unit-length-normalize a Fourier domain filter
   varycontrast - vary the contrast of an image
