@@ -1,11 +1,12 @@
-function consolidatematdir(dir0)
+function f = consolidatematdir(dir0)
 
-% function consolidatematdir(dir0)
+% function f = consolidatematdir(dir0)
 %
 % <dir0> is a path to a directory
 %
 % use consolidatemat.m to load all *.mat files
 % in <dir0> and write the results to <dir0>.mat.
+% return a string that refers to the location of the written file.
 %
 % example:
 % mkdir('test');
@@ -25,3 +26,4 @@ else
   pre0 = [f '/'];
 end
 consolidatemat([pre0 file0 '/*.mat'],[pre0 file0 '.mat']);
+f = [pre0 file0 '.mat'];
