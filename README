@@ -274,6 +274,7 @@ stats/
   fitl1line - perform linear regression but use an L1-error metric 
   fitline2derror - fit a line to a set of 2D points using an error metric that is sensitive to both x and y
   fitnonlinearmodel - a useful wrapper around MATLAB's lsqcurvefit.m function
+  fitnonlinearmodel_consolidate - consolidate .mat files written by fitnonlinearmodel
   fitnonlinearmodel_helper - a helper function for fitnonlinearmodel.m
   fitrbfpdf - fit a simplified mixture-of-Gaussians probability density function model using k-means
   fitrectpdf - fit a rectified squared model using k-means and interpret as a PDF
