@@ -15,6 +15,7 @@ results = struct;
 results.params = zeros(length(trainfun),size(opt.model{end}{2},2));
 results.testdata =  cell(1,length(trainfun));  % but converted to a matrix at the end
 results.modelpred = cell(1,length(trainfun));  % but converted to a matrix at the end
+results.modelfit =  cell(1,length(trainfun));  % but converted to a matrix at the end
 results.trainperformance = zeros(1,length(trainfun));
 results.testperformance =  zeros(1,length(trainfun));
 results.aggregatedtestperformance = [];
@@ -34,6 +35,7 @@ for rr=1:length(trainfun)
   testdata =  feval(testfun{rr},opt.data);   % result is a column vector
   testT =     projectionmatrix(feval(testfun{rr},tmatrix));    % NOTE: potentially slow step. make sparse? [or CACHE]
   testS =     projectionmatrix(feval(testfun{rr},smatrix));    % NOTE: potentially slow step. make sparse? [or CACHE]
+  allstim =   catcell(1,stimulus);
 
   % precompute
   traindataT = trainT*traindata;  % remove regressors from data (fitting)
@@ -154,6 +156,9 @@ for rr=1:length(trainfun)
     results.modelpred{rr} = nanreplace(testS*feval(model,finalparams,feval(transform,teststim)),0,2);
   end
   
+  % prepare modelfit
+  results.modelfit{rr} = nanreplace(feval(model,finalparams,feval(transform,allstim)),0,2)';
+  
   % compute metrics
   results.trainperformance(rr) = feval(opt.metric,modelfittemp,traindatatemp);
   if isempty(results.testdata{rr})  % handle this case explicitly, just to avoid problems
@@ -167,6 +172,7 @@ end
 % compute aggregated metrics
 results.testdata = catcell(1,results.testdata);
 results.modelpred = catcell(1,results.modelpred);
+results.modelfit = catcell(1,results.modelfit);
 if isempty(results.testdata)
   results.aggregatedtestperformance = NaN;
 else

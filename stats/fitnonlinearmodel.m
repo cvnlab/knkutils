@@ -121,9 +121,13 @@ function results = fitnonlinearmodel(opt,chunksize,chunknum)
 %   *** OUTPUT-RELATED ***
 %   <dontsave> (optional) is a string or a cell vector of strings indicating outputs
 %     to omit when returning.  For example, you may want to omit 'testdata', 'modelpred',
-%     'numiters', and 'resnorms' since they may use a lot of memory.  If [] or not
-%     supplied, then we use the default of {'numiters' 'resnorms'}.  If {}, then we 
-%     will return all outputs.
+%     'modelfit', 'numiters', and 'resnorms' since they may use a lot of memory.  
+%     If [] or not supplied, then we use the default of {'modelfit' 'numiters' 'resnorms'}.
+%     If {}, then we will return all outputs.  Note: <dontsave> can also refer to 
+%     auxiliary variables that are saved to the .mat files when <outputdir> is used.
+%   <dosave> (optional) is just like 'dontsave' except that the outputs specified here
+%     are guaranteed to be returned.  (<dosave> takes precedence over <dontsave>.)
+%     Default is {}.
 %
 % <chunksize> (optional) is the number of voxels to process in a single function call.
 %   The default is to process all voxels.
@@ -155,6 +159,14 @@ function results = fitnonlinearmodel(opt,chunksize,chunknum)
 %     This is the aggregated testing data across the resampling schemes.
 % - 'modelpred' is time points x voxels.
 %     This is the aggregated model predictions across the resampling schemes.
+% - 'modelfit' is resampling cases x time points x voxels.
+%     This is the model fit for each resampling scheme.  Here, by "model fit"
+%     we mean the fit for each of the original stimuli based on the parameters
+%     estimated in a given resampling case; we do not mean the fit for each of the 
+%     stimuli involved in the fitting.  (For example, if there are 100 stimuli and 
+%     we are performing cross-validation, there will nevertheless be 100 time points
+%     in 'modelfit'.)  Also, note that 'modelfit' is the raw fit; it is not adjusted
+%     for <wantremovepoly> and <wantremoveextra>.
 % - 'numiters' is a cell vector of dimensions 1 x voxels.  Each element is
 %     is resampling cases x seeds x models.  These are the numbers of iterations
 %     used in the optimizations.
@@ -175,6 +187,9 @@ function results = fitnonlinearmodel(opt,chunksize,chunknum)
 %   should have no effect on the final parameter estimates.
 %
 % History:
+% - 2013/09/04 - add totalnumvxs variable
+% - 2013/09/03 - allow <dontsave> to refer to the auxiliary variables
+% - 2013/09/02 - add 'modelfit' and adjust default for 'dontsave'; add 'dosave'
 % - 2013/08/28 - new outputs 'resnorms' and 'numiters'; last-minute data scaling; 
 %                tweak default handling of 'dontsave'
 % - 2013/08/18 - Initial version.
@@ -256,7 +271,8 @@ if isfield(opt,'vxs')
   else
     vxsfull = opt.vxs;
   end
-  vxsfull = sort(union([],flatten(opt.vxs)));
+  vxsfull = sort(union([],flatten(vxsfull)));
+  totalnumvxs = length(vxsfull);
 end
 
 % deal with chunksize and chunknum
@@ -278,7 +294,13 @@ if isa(opt.data,'function_handle')
   fprintf('*** fitnonlinearmodel: loading data. ***\n');
   if nargin(opt.data) == 0
     data = feval(opt.data);
-  else
+    if iscell(data)
+      totalnumvxs = size(data{1},2);
+    else
+      totalnumvxs = size(data,2);
+    end
+  else  % note that in this case, vxs should have been specified,
+        % so totalnumvxs should have already been calculated above.
     if isempty(chunksize)
       chunksize = length(vxsfull);
     end
@@ -287,6 +309,11 @@ if isa(opt.data,'function_handle')
   end
 else
   data = opt.data;
+  if iscell(data)
+    totalnumvxs = size(data{1},2);
+  else
+    totalnumvxs = size(data,2);
+  end
 end
 if ~iscell(data)
   data = {data};
@@ -294,13 +321,13 @@ end
 
 % deal with chunksize
 if isempty(chunksize)
-  chunksize = size(data{1},2);  % default is all voxels
+  chunksize = totalnumvxs;  % default is all voxels
 end
 
 % if not isvxscase, then we may still need to do chunking
 if ~isvxscase
-  vxs = chunking(1:size(data{1},2),chunksize,chunknum);
-  if ~isequal(vxs,1:size(data{1},2))
+  vxs = chunking(1:totalnumvxs,chunksize,chunknum);
+  if ~isequal(vxs,1:totalnumvxs)
     for p=1:length(data)
       data{p} = data{p}(:,vxs);
     end
@@ -409,10 +436,13 @@ if ~isfield(opt,'wantremoveextra') || isempty(opt.wantremoveextra)
   opt.wantremoveextra = 1;
 end
 if ~isfield(opt,'dontsave') || (isempty(opt.dontsave) && ~iscell(opt.dontsave))
-  opt.dontsave = {'numiters' 'resnorms'};
+  opt.dontsave = {'modelfit' 'numiters' 'resnorms'};
 end
 if ~iscell(opt.dontsave)
   opt.dontsave = {opt.dontsave};
+end
+if ~isfield(opt,'dosave') || isempty(opt.dosave)
+  opt.dosave = {};
 end
 
 % make outputdir if necessary
@@ -432,7 +462,7 @@ numtime = cellfun(@(x) size(x,1),data);
 
 % save initial time
 if wantsave
-  saveexcept(outputfile,'data');
+  saveexcept(outputfile,[{'data'} setdiff(opt.dontsave,opt.dosave)]);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% LOAD SOME ITEMS
@@ -571,6 +601,7 @@ results = struct;
 results.params = cat(3,results0.params);
 results.testdata = cat(2,results0.testdata);
 results.modelpred = cat(2,results0.modelpred);
+results.modelfit = cat(3,results0.modelfit);
 results.trainperformance = cat(1,results0.trainperformance).';
 results.testperformance  = cat(1,results0.testperformance).';
 results.aggregatedtestperformance = cat(2,results0.aggregatedtestperformance);
@@ -579,7 +610,17 @@ results.resnorms = cat(2,{results0.resnorms});
 
 % kill unwanted outputs
 for p=1:length(opt.dontsave)
-  results = rmfield(results,opt.dontsave{p});
+
+  % if member of dosave, keep it!
+  if ismember(opt.dontsave{p},opt.dosave)
+
+  % if not, then kill it (if it exists)!
+  else
+    if isfield(results,opt.dontsave{p})
+      results = rmfield(results,opt.dontsave{p});
+    end
+  end
+
 end
 
 % save results
