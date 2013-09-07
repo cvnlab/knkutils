@@ -10,6 +10,9 @@ function results = fitnonlinearmodel_helper(opt,stimulus,tmatrix,smatrix,trainfu
 ismultipleseeds = size(opt.model{1}{1},1) > 1;
 ismultiplemodels = length(opt.model) > 1;
 
+% calc
+wantmodelfit = ~(ismember('modelfit',opt.dontsave) && ~ismember('modelfit',opt.dosave));
+
 % init
 results = struct;
 results.params = zeros(length(trainfun),size(opt.model{end}{2},2));
@@ -35,7 +38,9 @@ for rr=1:length(trainfun)
   testdata =  feval(testfun{rr},opt.data);   % result is a column vector
   testT =     projectionmatrix(feval(testfun{rr},tmatrix));    % NOTE: potentially slow step. make sparse? [or CACHE]
   testS =     projectionmatrix(feval(testfun{rr},smatrix));    % NOTE: potentially slow step. make sparse? [or CACHE]
-  allstim =   catcell(1,stimulus);
+  if wantmodelfit  % save on memory if user doesn't even want 'modelfit'
+    allstim = catcell(1,stimulus);
+  end
 
   % precompute
   traindataT = trainT*traindata;  % remove regressors from data (fitting)
@@ -112,9 +117,9 @@ for rr=1:length(trainfun)
         fprintf('      the seed is ['); fprintf('%.3f ',seed); fprintf('].\n');
       end
 
-      % perform the fit (NOTICE THE DIVISION BY DATASTD AND THE NAN PROTECTION)
+      % perform the fit (NOTICE THE DIVISION BY DATASTD, THE NAN PROTECTION, THE CONVERSION TO DOUBLE)
       [params0,resnorm,residual,exitflag,output] = ...
-        lsqcurvefit(@(x,y) nanreplace(feval(fun,x) / datastd,0,2),seed(ix),[],traindataT,lb,ub,options);
+        lsqcurvefit(@(x,y) double(nanreplace(feval(fun,x) / datastd,0,2)),seed(ix),[],double(traindataT),lb,ub,options);
       params0 = copymatrix(seed,ix,params0);
 
       % report
@@ -157,7 +162,11 @@ for rr=1:length(trainfun)
   end
   
   % prepare modelfit
-  results.modelfit{rr} = nanreplace(feval(model,finalparams,feval(transform,allstim)),0,2)';
+  if wantmodelfit
+    results.modelfit{rr} = nanreplace(feval(model,finalparams,feval(transform,allstim)),0,2)';
+  else
+    results.modelfit{rr} = [];  % if not wanted by user, don't bother computing
+  end
   
   % compute metrics
   results.trainperformance(rr) = feval(opt.metric,modelfittemp,traindatatemp);

@@ -10,6 +10,7 @@ in your MATLAB startup.m file.
 Below we document major code changes.  Minor code changes and tweaks that have no significant impact are not mentioned here (e.g. things like cosmetic adjustments, code speed-ups, making functions more general by adding optional input arguments, fixing bugs that would have result in code crashes, etc.).  Major changes include things that make the code backwards-incompatible and things that change actual analysis results.
 
 History of major code changes:
+2013/09/07 - fix bug in fitnonlinearmodel (if polynomials or extra regressors were used in multiple runs, then they were not getting fit properly).
 2013/08/18 - in makedirid.m, occurrences of '-' are now replaced with '_'
 2013/08/18 - in projectionmatrix.m, in the cases of empty <X>, we now return 1 instead of [].
 2012/06/14 - in constructpolynomialmatrix2d.m and constructpolynomialmatrix3d.m, we now sort the char representation of the basis functions.  the reason is that previously, different machine architectures would give different orders for the basis functions.  this is horrible, as it means that different machines would have different parameter orders.  the fix (which hopefully is robust) is to sort the basis function character-wise, explicitly.  please be aware of this change!

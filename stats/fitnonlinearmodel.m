@@ -187,6 +187,10 @@ function results = fitnonlinearmodel(opt,chunksize,chunknum)
 %   should have no effect on the final parameter estimates.
 %
 % History:
+% - 2013/09/07 - fix bug (if polynomials or extra regressors were used in multiple runs,
+%                then they were not getting fit properly).
+% - 2013/09/07 - in fitnonlinearmodel_helper.m, convert to double in the call to lsqcurvefit;
+%                and perform a speed-up (don't compute modelfit if unwanted)
 % - 2013/09/04 - add totalnumvxs variable
 % - 2013/09/03 - allow <dontsave> to refer to the auxiliary variables
 % - 2013/09/02 - add 'modelfit' and adjust default for 'dontsave'; add 'dosave'
@@ -507,12 +511,22 @@ end
 
 % construct total regressors matrix for fitting purposes
 % (i.e. both polynomials and extra regressors)
+  % first, construct the run-wise regressors
 tmatrix = {};
 for p=1:length(data)
   tmatrix{p} = cat(2,polyregressors{p},extraregressors{p});
 end
+  % then, separate them using blkdiag
+temp = blkdiag(tmatrix{:});
+cnt = 0;
+for p=1:length(data)
+  tmatrix{p} = temp(cnt+(1:size(tmatrix{p},1)),:);
+  cnt = cnt + size(tmatrix{p},1);
+end
+clear temp;
 
 % construct special regressors matrix for the purposes of the <metric>
+  % first, construct the run-wise regressors
 smatrix = {};
 for p=1:length(data)
   temp = [];
@@ -524,6 +538,14 @@ for p=1:length(data)
   end
   smatrix{p} = temp;
 end
+  % then, separate them using blkdiag
+temp = blkdiag(smatrix{:});
+cnt = 0;
+for p=1:length(data)
+  smatrix{p} = temp(cnt+(1:size(smatrix{p},1)),:);
+  cnt = cnt + size(smatrix{p},1);
+end
+clear temp;
 
 % figure out trainfun and testfun for resampling
 switch resamplingmode
