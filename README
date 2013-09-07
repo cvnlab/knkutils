@@ -306,6 +306,7 @@ stats/
 timeseries/
   calcpeak - calculate the peak of some time-series data (using interpolation)
   constructbutterfilter1D - construct a Fourier-domain Butterworth filter
+  conv2run - convolve but keep runs separate
   deconvolvevectors - deconvolve one vector from another vector
   fouriertospace1D - convert magnitude filter in Fourier domain to the space domain
   processmulti1D - apply a function that expects a single vector to multiple vectors
