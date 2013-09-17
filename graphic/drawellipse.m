@@ -10,6 +10,8 @@ function h = drawellipse(x,y,ang,sd1,sd2,theta0,theta1,linestyle,granularity)
 % <theta0> (optional) is the starting angle in [0,2*pi).  default: 0.
 % <theta1> (optional) is the ending angle in [0,2*pi].  default: 2*pi.
 % <linestyle> (optional) is like 'r-'.  default: 'r-'.
+%   special case is {C} where C is a color char, scalar, or vector.
+%   in this case, a patch object is created instead of a line object.
 % <granularity> (optional) is how many points in a complete revolution.  default: 360.
 %
 % draw a complete or partial ellipse on the current figure.  the ellipse corresponds 
@@ -59,4 +61,8 @@ coord(1,:) = coord(1,:) + x;
 coord(2,:) = coord(2,:) + y;
 
 % do it
-h = plot(coord(1,:),coord(2,:),linestyle);
+if iscell(linestyle)
+  h = patch(coord(1,:),coord(2,:),linestyle{1});
+else
+  h = plot(coord(1,:),coord(2,:),linestyle);
+end
