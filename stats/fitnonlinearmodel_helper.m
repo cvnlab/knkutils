@@ -175,6 +175,10 @@ for rr=1:length(trainfun)
   else
     results.testperformance(rr) = feval(opt.metric,results.modelpred{rr},results.testdata{rr});
   end
+  
+  % report
+  fprintf('    trainperformance is %.2f. testperformance is %.2f.\n', ...
+    results.trainperformance(rr),results.testperformance(rr));
 
 end
 
@@ -187,3 +191,6 @@ if isempty(results.testdata)
 else
   results.aggregatedtestperformance = feval(opt.metric,results.modelpred,results.testdata);
 end
+
+% report
+fprintf('  aggregatedtestperformance is %.2f.\n',results.aggregatedtestperformance);
