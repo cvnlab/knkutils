@@ -49,6 +49,11 @@ function results = fitnonlinearmodel(opt,chunksize,chunknum)
 %       I (optional) is a function that takes fitted parameters (1 x P) from the 
 %         previous model and outputs a function that transforms stimuli into a 
 %         new form prior to model evaluation.
+%    OR
+%     M where M is a function that takes stimuli (N x C) and responses (N x 1) and
+%       outputs an estimate of the linear weights (1 x C).  For example, simple
+%       OLS regression is the case where M is @(X,y) (inv(X'*X)*X'*y)'.
+%       This case is referred to as the linear-model case.
 %
 %   *** SEED ***
 %   <seed> (optional) is:
@@ -58,6 +63,7 @@ function results = fitnonlinearmodel(opt,chunksize,chunknum)
 %     (3) a function that accepts a single voxel index and returns (1) or (2).
 %         in this case, <vxs> must be supplied.
 %     If supplied, <seed> overrides the contents of X in <model>.
+%     In the linear-model case, <seed> is not applicable and should be [].
 %
 %   *** OPTIMIZATION OPTIONS ***
 %   <optimoptions> (optional) are optimization options in the form used by optimset.m.
@@ -68,12 +74,14 @@ function results = fitnonlinearmodel(opt,chunksize,chunknum)
 %                'TolFun',1e-6,'TolX',1e-6, ...
 %                'OutputFcn',@(a,b,c) outputfcnsanitycheck(a,b,c,1e-6,10))
 %     In particular, it may be useful to specify a specific optimization algorithm to use.
+%     In the linear-model case, <optimoptions> is ignored.
 %   <outputfcn> (optional) is a function suitable for use as an 'OutputFcn'.  If you
 %     supply <outputfcn>, it will take precedence over any 'OutputFcn' in <optimoptions>.
 %     The reason for <outputfcn> is that the data points being fitted will be passed as a
 %     fourth argument to <outputfcn> (if <outputfcn> accepts four arguments).  This 
 %     enables some useful functionality such as being able to visualize the model and
 %     the data during the optimization.
+%     In the linear-model case, <outputfcn> is ignored.
 %
 %   *** RESAMPLING SCHEMES ***
 %   <wantresampleruns> (optional) is whether to resample at the level of runs (as opposed
@@ -134,14 +142,16 @@ function results = fitnonlinearmodel(opt,chunksize,chunknum)
 % <chunknum> (optional) is the chunk number to process.  Default: 1.
 %
 % This function, fitnonlinearmodel.m, is essentially a wrapper around MATLAB's
-% lsqcurvefit.m function for the purposes of fitting nonlinear models to data.
+% lsqcurvefit.m function for the purposes of fitting nonlinear (and linear) models
+% to data.
 %
 % This function provides the following key benefits:
 % - Deals with input and output issues (making it easy to process many individual
 %   voxels and evaluate different models)
 % - Deals with resampling (cross-validation and bootstrapping)
-% - Makes it easy to evaluate multiple initial seeds (to avoid local minima)
-% - Makes it easy to perform stepwise fitting of models
+% - In the case of nonlinear models, makes it easy to evaluate multiple initial 
+%   seeds (to avoid local minima)
+% - In the case of nonlinear models, makes it easy to perform stepwise fitting of models
 %
 % Outputs:
 % - 'params' is resampling cases x parameters x voxels.
@@ -169,10 +179,11 @@ function results = fitnonlinearmodel(opt,chunksize,chunknum)
 %     for <wantremovepoly> and <wantremoveextra>.
 % - 'numiters' is a cell vector of dimensions 1 x voxels.  Each element is
 %     is resampling cases x seeds x models.  These are the numbers of iterations
-%     used in the optimizations.
+%     used in the optimizations.  Note that 'numiters' is [] in the linear-model case.
 % - 'resnorms' is a cell vector of dimensions 1 x voxels.  Each element is
 %     is resampling cases x seeds.  These are the residual norms obtained
 %     in the optimizations.  This is useful for diagnosing multiple-seed issues.
+%     Note that 'resnorms' is [] in the linear-model case.
 %
 % Notes:
 % - Since we use %06d.mat to name output files, you should use no more than 999,999 chunks.
@@ -181,12 +192,13 @@ function results = fitnonlinearmodel(opt,chunksize,chunknum)
 %   by making it such that the prediction for a given data point is calculated as the
 %   average of the predicted responses for the individual stimulus frames associated with
 %   that data point.
-% - To control the scale of the computations, in the optimization call we divide the 
-%   data by its standard deviation and apply the exact same scaling to the model.  This
-%   has the effect of controlling the scale of the residuals.  This last-minute scaling 
-%   should have no effect on the final parameter estimates.
+% - In the case of nonlinear models, to control the scale of the computations, in the 
+%   optimization call we divide the data by its standard deviation and apply the exact 
+%   same scaling to the model.  This has the effect of controlling the scale of the 
+%   residuals.  This last-minute scaling should have no effect on the final parameter estimates.
 %
 % History:
+% - 2013/10/02 - implement the linear-model case
 % - 2013/09/07 - fix bug (if polynomials or extra regressors were used in multiple runs,
 %                then they were not getting fit properly).
 % - 2013/09/07 - in fitnonlinearmodel_helper.m, convert to double in the call to lsqcurvefit;
@@ -232,10 +244,21 @@ function results = fitnonlinearmodel(opt,chunksize,chunknum)
 %             @(pp,dd) evalgaussian1d(pp,dd)}}, ...
 %   'outputfcn',@(a,b,c,d) pause2(.1) | outputfcnsanitycheck(a,b,c,1e-6,10) | outputfcnplot(a,b,c,1,d));
 % results = fitnonlinearmodel(opt);
+%
+% Example 3:
+%
+% % same as the first example in Example 1, but now we use the
+% % linear-model functionality
+% x = randn(100,1);
+% y = 2*x + 3 + randn(100,1);
+% opt = struct( ...
+%   'stimulus',[x ones(100,1)], ...
+%   'data',y, ...
+%   'model',@(X,y) (inv(X'*X)*X'*y)');
+% results = fitnonlinearmodel(opt);
 
 % internal notes:
 % - replaces fitprf.m, fitprfstatic.m, fitprfmulti.m, and fitprfstaticmulti.m
-% - not implemented: gradient descent, OLS
 % - some of the new features: opt struct format, fix projection matrix bug (must
 %   compute projection matrix based on concatenated regressors), multiple initial
 %   seeds are handled internally!, user must deal with model specifics like
@@ -346,15 +369,17 @@ fprintf(['*** fitnonlinearmodel: outputdir = %s, chunksize = %d, chunknum = %d\n
   opt.outputdir,chunksize,chunknum);
 
 % deal with model
-if ~iscell(opt.model{1})
+if ~isa(opt.model,'function_handle') && ~iscell(opt.model{1})
   opt.model = {opt.model};
 end
-for p=1:length(opt.model)
-  if length(opt.model{p}) < 4 || isempty(opt.model{p}{4})
-    if p==1
-      opt.model{p}{4} = @identity;
-    else
-      opt.model{p}{4} = @(ss) @identity;
+if ~isa(opt.model,'function_handle')
+  for p=1:length(opt.model)
+    if length(opt.model{p}) < 4 || isempty(opt.model{p}{4})
+      if p==1
+        opt.model{p}{4} = @identity;
+      else
+        opt.model{p}{4} = @(ss) @identity;
+      end
     end
   end
 end
@@ -601,6 +626,7 @@ for p=1:vnum
 
   % get seed and hack it in
   if ~isempty(opt.seed)
+    assert(~isa(opt.model,'function_handle'));  % sanity check
     if isa(opt.seed,'function_handle')
       seed0 = feval(opt.seed,vxs(p));
     else
