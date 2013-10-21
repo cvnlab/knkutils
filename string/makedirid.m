@@ -6,9 +6,11 @@ function f = makedirid(x,num)
 % <num> (optional) is the non-negative number of elements desired.  default: 2.
 %
 % return a string with the last <num> elements of the path joined with '_'.
-% also, any occurrences of '-' are replaced with '_'.
+% also, any occurrences of '-' and '.' are replaced with '_'.
+% this function is useful for constructing MATLAB-compatible function/script names.
 %
 % history:
+% - 2013/10/13 - also replace '.' with '_'
 % - 2013/08/18 - now, '-' is replaced with '_' (so that the result
 %   can be a valid function name).
 %
@@ -28,5 +30,6 @@ for p=1:num
 end
 f = f(2:end);
 
-% replace - with _
+% replace - and . with _
 f = strrep(f,'-','_');
+f = strrep(f,'.','_');
