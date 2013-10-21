@@ -300,6 +300,7 @@ stats/
   randnmulti - generate random numbers from a multivariate Gaussian
   randomization - calculate p-values using randomization
   randomorthogonalbasis - generate a random set of orthogonal basis functions
+  resamplingtransform - a utility function to deal with cross-validation ordering as used in fitnonlinearmodel.m
   roundpvalue - round p-value up to have the form Xe-Y
   runkmeans - run the k-means clustering algorithm
   subspaceapprox - calculate correlation between a subspace and a vector
