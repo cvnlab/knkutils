@@ -473,6 +473,9 @@ end
 if ~isfield(opt,'dosave') || isempty(opt.dosave)
   opt.dosave = {};
 end
+if ~iscell(opt.dosave)
+  opt.dosave = {opt.dosave};
+end
 
 % make outputdir if necessary
 if wantsave
