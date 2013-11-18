@@ -257,6 +257,9 @@ parfor p=1:numvols
     vols{p} = vols{p}(:,:,:,2:nt+1);
   
   end
+  
+  % clean up
+  assert(rmdir(dir0,'s'));
 
 end
 fprintf('done.\n');
