@@ -1,10 +1,12 @@
-function results = consolidatemat(files,outfile)
+function results = consolidatemat(files,outfile,varsexclude)
 
-% function results = consolidatemat(files,outfile)
+% function results = consolidatemat(files,outfile,varsexclude)
 %
 % <files> is a wildcard matching one or more .mat files
 % <outfile> (optional) is a .mat file to write 'results' to.
 %   if [] or not supplied, don't write to a .mat file.
+% <varsexclude> (optional) is a variable name or a cell vector of
+%   variable names to NOT load.  if [] or not supplied, load everything.
 %
 % we use matchfiles.m to match the <files>.
 % we then construct a struct array with elements 
@@ -27,6 +29,9 @@ function results = consolidatemat(files,outfile)
 if ~exist('outfile','var') || isempty(outfile)
   outfile = [];
 end
+if ~exist('varsexclude','var') || isempty(varsexclude)
+  varsexclude = [];
+end
 
 % do it
 files = matchfiles(files);
@@ -34,7 +39,11 @@ clear results;
 fprintf('consolidatemat: ');
 for p=1:length(files)
   statusdots(p,length(files));
-  a = load(files{p});
+  if isempty(varsexclude)
+    a = load(files{p});
+  else
+    a = loadexcept(files{p},varsexclude,1);
+  end
   if exist('results','var')
     assert(isequal(sort(fieldnames(results(1))),sort(fieldnames(a))), ...
            sprintf('unexpected fields in file "%s"',files{p}));
