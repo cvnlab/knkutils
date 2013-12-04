@@ -41,7 +41,7 @@ function fitnonlinearmodel_consolidate(dir0)
 % a
 
 % consolidate
-file0 = consolidatematdir(dir0);
+file0 = consolidatematdir(dir0,{'opt'});  % 'opt' may be big. let's specifically exclude it.
 
 % load
 a = load(file0);
