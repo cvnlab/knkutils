@@ -1,6 +1,6 @@
-function drawtext(res,x,y,font,sz,color,bg,word)
+function h = drawtext(res,x,y,font,sz,color,bg,word)
 
-% function drawtext(res,x,y,font,sz,color,bg,word)
+% function h = drawtext(res,x,y,font,sz,color,bg,word)
 %
 % <res> is
 %   0 means standard figure coordinate frame
@@ -19,6 +19,7 @@ function drawtext(res,x,y,font,sz,color,bg,word)
 % <x> and <y> are interpreted with respect to the x-
 % and y-axes being bounded by [-.5,.5].  we automatically set the
 % axis bounds and also reverse the y-axis if necessary.
+% we return the handle to the text object.
 %
 % example:
 % figure; drawtext(0,0,0,'Helvetica',.5,[.5 0 0],[1 1 1],'TEST');
