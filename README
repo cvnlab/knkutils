@@ -130,6 +130,7 @@ programming/
   evalme - evaluate multi-line input in the MATLAB workspace
   gethostname - get the hostname
   getpid - get the process ID for this instance of MATLAB
+  gettimestring - return the current date/time as a simple integer string
   GPUconv - convert to GPU format
   GPUok - return whether we should try to use the GPU
   gunziptemp - gunzip a file on the fly
@@ -312,6 +313,7 @@ timeseries/
   conv2run - convolve but keep runs separate
   deconvolvevectors - deconvolve one vector from another vector
   fouriertospace1D - convert magnitude filter in Fourier domain to the space domain
+  generatepinknoise1D - generate samples of pink noise
   processmulti1D - apply a function that expects a single vector to multiple vectors
   sincshift - shift time-series data using sinc interpolation and padding
   tsfilter - filter time-series data with a Fourier-defined magnitude-based filter
