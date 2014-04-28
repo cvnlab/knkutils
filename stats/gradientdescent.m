@@ -110,6 +110,7 @@ function [h,dc,numiters,Xmn,Xsd,Xbad,esterr,stoperr,vout] = ...
 % calccod(Xval*h0ALT+repmat(dcALT,[100 1]),yval,1)
 %
 % history:
+% 2014/04/27 - fix minor bug (would have crashed)
 % 2010/08/07 - add <nodc> input.
 
 % internal note: what about predictions and p-values?
@@ -213,12 +214,16 @@ Xsd = zeros(1,q);
 if nodc
   for p=1:length(indices)
     [X(:,indices{p}),d,Xsd(indices{p})] = unitlength(X(:,indices{p}),1,1,0);  % NOTE: this can blow up channels with low variance!
-    X0(:,indices{p}) = unitlength(X0(:,indices{p}),1,1,0,Xsd(indices{p}));
+    if ~isempty(X0)
+      X0(:,indices{p}) = unitlength(X0(:,indices{p}),1,1,0,Xsd(indices{p}));
+    end
   end
 else
   for p=1:length(indices)
     [X(:,indices{p}),Xmn(indices{p}),Xsd(indices{p})] = calczscore(X(:,indices{p}),1,[],[],0);  % NOTE: this can blow up channels with low variance!
-    X0(:,indices{p}) = calczscore(X0(:,indices{p}),1,Xmn(indices{p}),Xsd(indices{p}),0);
+    if ~isempty(X0)
+      X0(:,indices{p}) = calczscore(X0(:,indices{p}),1,Xmn(indices{p}),Xsd(indices{p}),0);
+    end
   end
 end
 
