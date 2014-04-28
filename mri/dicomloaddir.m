@@ -65,6 +65,7 @@ function [vols,volsizes,inplanematrixsizes,trs] = dicomloaddir(files,filenamefor
 % directory, we just skip gracefully (and report to the command window).
 %
 % history:
+% 2014/04/27 - better handling of file number matching; just issue warning now when in-plane matrix size is not found
 % 2011/09/16 - change default behavior so that it matches * and perform numerical sorting for free
 % 2011/08/07 - allow zero directories to be matched.
 % 2011/07/27 - add trs output
@@ -122,7 +123,7 @@ for p=1:length(files)
     filenumbers = [];
     for qqq=1:length(files0)
       temp = regexp(files0{qqq},'(\d+)','tokens');
-      filenumbers(qqq,:) = cellfun(@(x) str2double(x{1}),temp);
+      filenumbers(qqq,:) = cellfun(@(x) str2double(x{1}),temp(1));
       if qqq==1
         filenumbers = placematrix(zeros(length(files0),size(filenumbers,2)),filenumbers,[1 1]);
       end
@@ -287,7 +288,9 @@ for p=1:length(files)
 %       assert(double(a.NumberOfPhaseEncodingSteps) == str2double(tokens.pelines));  % sanity check
 %     end
   else
-    die;
+     fprintf('warning, can''t find inplanematrixsizes\n');
+     inplanematrixsizes{cnt} = [NaN NaN];
+%    die;
   end
   
   % figure out TR (in seconds)
