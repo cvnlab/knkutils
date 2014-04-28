@@ -39,6 +39,8 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   given frame.  default is 255*ones(size(<frameorder>,2),3) which means 
 %   to multiply each channel by 1 (i.e. do nothing special).  note that
 %   when an entry in <frameorder> is 0, <framecolor> has no effect for that entry.
+%   <framecolor> can also be size(<frameorder>,2) x 1 with values in [0,1]
+%   indicating an alpha change.
 % <frameduration> (optional) is how many monitor refreshes you want a
 %   single movie frame to last.  default: 15.
 % <fixationorder> (optional) is:
@@ -214,6 +216,8 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   also be the double matrix directly.  <maskimages> can also be a cell vector of
 %   double elements, each of which is A x B x M.  masks should have values in [0,1] where
 %   1 means pass, 0 means show background, and fractional values allow blending.
+%   <maskimages> can also use uint8 format (to save memory); in this case, values should
+%   be between 0 and 255 which we automatically map to 0 and 1.
 % <specialoverlay> (optional) is a uint8 image matrix with four channels along the third
 %   dimension (the last gives the alpha channel).  if supplied, this is an image that gets
 %   drawn on top of the stimulus but below the fixation.
@@ -268,6 +272,8 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   So it is important to test your particular setup!
 %
 % history:
+% 2014/02/17 - allow <maskimages> to be uint8
+% 2013/12/20 - allow framecolor to be alpha values
 % 2013/08/20 - implement negative case for B of <trialtask>,
 %              implement negative case for F of <trialtask>.
 % 2013/08/18 - add input <specialoverlay>.  add another special case 
@@ -429,7 +435,7 @@ if iscell(maskimages) && ischar(maskimages{1})
   maskimages = [];
   for p=1:length(moviefile)
     temp = load(moviefile{p},'maskimages');
-    maskimages = cat(3,maskimages,temp.maskimages);
+    maskimages = cat(3,cast(maskimages,class(temp.maskimages)),temp.maskimages);
   end
   clear temp;
   fprintf('loading maskimages: done\n');
@@ -440,8 +446,10 @@ if iscell(maskimages)
   maskimages = cat(3,maskimages{:});
 end
 
-% convert maskimages to uint8 alpha images
-maskimages = uint8(255*maskimages);
+% convert maskimages to uint8 alpha images if necessary
+if ~isa(maskimages,'uint8')
+  maskimages = uint8(255*maskimages);
+end
 
 % deal with mask
 if ~isempty(moviemask)
@@ -927,7 +935,11 @@ for frame=1:frameskip:size(frameorder,2)+1
       end
       texture = Screen('MakeTexture',win,txttemp);
     end
-    Screen('DrawTexture',win,texture,[],movierect,0,filtermode,1,framecolor(frame0,:));
+    if size(framecolor,2) == 3  % the usual case
+      Screen('DrawTexture',win,texture,[],movierect,0,filtermode,1,framecolor(frame0,:));
+    else
+      Screen('DrawTexture',win,texture,[],movierect,0,filtermode,framecolor(frame0));
+    end
     Screen('Close',texture);
   end
   
