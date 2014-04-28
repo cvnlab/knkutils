@@ -32,6 +32,7 @@ function [f,len,sc] = unitlength(m,dim,flag,wantcaution,sc)
 %   unitlength([NaN NaN]) is [NaN NaN].
 %
 % history:
+% 2014/04/27 - oops, make sure NaN is casted to class of <m>
 % 2011/06/27 - oops. handle empty case explicitly (it would have crashed)
 %
 % example:
@@ -80,7 +81,7 @@ else
 end
 
 % ok, do it
-f = bsxfun(@(x,y) zerodiv(x,y,NaN,wantcaution),m,sc);
+f = bsxfun(@(x,y) zerodiv(x,y,cast(NaN,class(m)),wantcaution),m,sc);
 
 
 % HM, IS THIS SLOWER OR FASTER:
