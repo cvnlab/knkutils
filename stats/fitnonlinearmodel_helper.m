@@ -149,9 +149,16 @@ for rr=1:length(trainfun)
         end
 
         % perform the fit (NOTICE THE DIVISION BY DATASTD, THE NAN PROTECTION, THE CONVERSION TO DOUBLE)
-        [params0,resnorm,residual,exitflag,output] = ...
-          lsqcurvefit(@(x,y) double(nanreplace(feval(fun,x) / datastd,0,2)),seed(ix),[],double(traindataT),lb,ub,options);
-        params0 = copymatrix(seed,ix,params0);
+        if ~any(ix)
+          params0 = seed;   % if no parameters are to be optimized, just return the seed
+          resnorm = NaN;
+          output = [];
+          output.iterations = NaN;
+        else
+          [params0,resnorm,residual,exitflag,output] = ...
+            lsqcurvefit(@(x,y) double(nanreplace(feval(fun,x) / datastd,0,2)),seed(ix),[],double(traindataT),lb,ub,options);
+          params0 = copymatrix(seed,ix,params0);
+        end
 
         % report
         fprintf('      the estimated parameters are ['); ...

@@ -198,6 +198,8 @@ function results = fitnonlinearmodel(opt,chunksize,chunknum)
 %   residuals.  This last-minute scaling should have no effect on the final parameter estimates.
 %
 % History:
+% - 2014/05/01 - change the main loop to parfor; some cosmetic tweaks;
+%                now, if no parameters are to be optimized, just return the initial seed
 % - 2013/10/02 - implement the linear-model case
 % - 2013/09/07 - fix bug (if polynomials or extra regressors were used in multiple runs,
 %                then they were not getting fit properly).
@@ -269,6 +271,7 @@ function results = fitnonlinearmodel(opt,chunksize,chunknum)
 %   myriad optimization options from the input level, drop run-separated metrics,
 %   drop the stimulus transformation speed-up (it was getting implemented in a 
 %   non-general way)
+% - regularization is its own thing? own code module?
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% REPORT
 
@@ -618,28 +621,29 @@ end
 
 % loop over voxels
 clear results0;
-for p=1:vnum
+parfor p=1:vnum
 
   % report
   fprintf('*** fitnonlinearmodel: processing voxel %d (%d of %d). ***\n',vxs(p),p,vnum);
   vtime = clock;  % start time for current voxel
 
   % get data and hack it in
-  opt.data = cellfun(@(x) x(:,p),data,'UniformOutput',0);
+  opt2 = opt;
+  opt2.data = cellfun(@(x) x(:,p),data,'UniformOutput',0);
 
   % get seed and hack it in
-  if ~isempty(opt.seed)
-    assert(~isa(opt.model,'function_handle'));  % sanity check
-    if isa(opt.seed,'function_handle')
-      seed0 = feval(opt.seed,vxs(p));
+  if ~isempty(opt2.seed)
+    assert(~isa(opt2.model,'function_handle'));  % sanity check
+    if isa(opt2.seed,'function_handle')
+      seed0 = feval(opt2.seed,vxs(p));
     else
-      seed0 = opt.seed;
+      seed0 = opt2.seed;
     end
-    opt.model{1}{1} = seed0;
+    opt2.model{1}{1} = seed0;
   end
   
   % call helper function to do the actual work
-  results0(p) = fitnonlinearmodel_helper(opt,stimulus,tmatrix,smatrix,trainfun,testfun);
+  results0(p) = fitnonlinearmodel_helper(opt2,stimulus,tmatrix,smatrix,trainfun,testfun);
 
   % report
   fprintf('*** fitnonlinearmodel: voxel %d (%d of %d) took %.1f seconds. ***\n', ...
