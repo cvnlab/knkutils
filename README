@@ -217,6 +217,7 @@ math/
   mod4 - like mod.m but restrict outputs to the range [-modulus/2,modulus/2]
   mtimescell - do matrix multiplication but with an argument split into a cell vector
   nanreplace - replace NaNs with a specified value
+  nanreplace2 - replace NaNs with a specified value (alternative mode of operation)
   nantoclosest - replace NaNs with the nearest valid values
   negrect - negative-rectify
   negreplace - replace negative values with a specified value
