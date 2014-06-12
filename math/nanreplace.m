@@ -7,7 +7,7 @@ function m = nanreplace(m,val,mode)
 % <mode> (optional) is
 %   0 means replace all NaNs in <m> with <val>.
 %   1 means if the first element of <m> is not finite (i.e. NaN, -Inf, Inf), fill entire matrix with <val>.
-%   2 means if any element of <m> is not finite, fill entire matrix with <val>.
+%   2 means if it is not true that all elements of <m> are finite and real, fill entire matrix with <val>.
 %   3 means replace any non-finite value in <m> in <val>.
 %   default: 0.
 %
@@ -32,7 +32,7 @@ case 1
     m(:) = val;
   end
 case 2
-  if ~all(isfinite(m(:)))
+  if ~all(isreal(m(:)) & isfinite(m(:)))
     m(:) = val;
   end
 case 3
