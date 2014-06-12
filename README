@@ -360,6 +360,7 @@ imageprocessing/
   imagesearch - search through image space to minimize some cost function
   imreadmulti - load in multiple images
   imresizedifferentfov - resize an image but use a different field-of-view
+  imresizememory - call imresize on a bunch of images, minimizing memory usage
   imwritemulti - write multiple images to multiple files
   imtoch - reshape image(s) from res x res x images to images x res*res
   makecircleimage - draw a circle as an image
