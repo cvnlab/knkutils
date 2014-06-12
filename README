@@ -317,6 +317,7 @@ timeseries/
   generatepinknoise1D - generate samples of pink noise
   processmulti1D - apply a function that expects a single vector to multiple vectors
   sincshift - shift time-series data using sinc interpolation and padding
+  tseriesinterp - interpolate time-series to achieve a new sampling rate
   tsfilter - filter time-series data with a Fourier-defined magnitude-based filter
 
 imageprocessing/
