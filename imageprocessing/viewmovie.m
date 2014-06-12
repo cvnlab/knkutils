@@ -1,6 +1,6 @@
-function viewmovie(data,mode,rot,prct,autopermute,cmap)
+function viewmovie(data,mode,rot,prct,autopermute,cmap,offset)
 
-% function viewmovie(data,mode,rot,prct,autopermute,cmap)
+% function viewmovie(data,mode,rot,prct,autopermute,cmap,offset)
 %
 % <data> is A x B x C x T, where A x B indicates slices and T indicates different volumes.
 %   T must be >= 1.
@@ -26,6 +26,8 @@ function viewmovie(data,mode,rot,prct,autopermute,cmap)
 %   into the third-dimension slot.  default: 0.
 % <cmap> (optional) is the colormap to use.  if supplied, this overrides the default.
 %   default is [] which means use the default colormap.
+% <offset> (optional) is a non-negative integer to add to the 1-index for the filename
+%   in the case that <mode> is A.  default: 0.
 %
 % when <mode> is 0, display <data> in a new figure window.  interact using the following
 % (assuming Psychtoolbox is available):
@@ -67,6 +69,9 @@ if ~exist('autopermute','var') || isempty(autopermute)
 end
 if ~exist('cmap','var') || isempty(cmap)
   cmap = [];
+end
+if ~exist('offset','var') || isempty(offset)
+  offset = 0;
 end
 
 % deal with autopermute
@@ -248,7 +253,7 @@ else
     cmap0 = cmap;
   end
   for cnt=1:size(data,4)
-    imwrite(makeimagestack(data(:,:,:,cnt),[],j),cmap0,sprintf([mode '.png'],cnt));
+    imwrite(makeimagestack(data(:,:,:,cnt),[],j),cmap0,sprintf([mode '.png'],offset+cnt));
   end
 
 end
