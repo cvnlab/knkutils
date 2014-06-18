@@ -420,6 +420,9 @@ figure/
   straightline - draw horizontal or vertical lines
 
 colormap/
+  cmapang - hue-based colormap suitable for circular ranges (e.g. angles)
+  cmapangLVF - like cmapang.m but focused on the left visual field
+  cmapangRVF - like cmapang.m but focused on the right visual field
   cmapdistinct - hue-based colormap for cases where you want maximally distinct colors
   cmaplookup - take values and get colors from colormap
   cmaphue - hue-based colormap suitable for circular ranges
@@ -428,6 +431,7 @@ colormap/
   cmapsign3 - blue-lightgray-red colormap suitable for ranges like [-X X]
   colorinterpolate - make a colormap by interpolating between key colors
   drawcolorbar - draw a colorbar on the current figure
+  drawcolorbarcircular - draw a circular colorbar on the current figure
 
 graphic/
   calcdistpointline - calculate the distance between one or more points and a line
