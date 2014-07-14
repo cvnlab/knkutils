@@ -1,6 +1,6 @@
-function drawcolorbar(range,ticks,cmap,str,orient)
+function h = drawcolorbar(range,ticks,cmap,str,orient)
 
-% function drawcolorbar(range,ticks,cmap,str,orient)
+% function h = drawcolorbar(range,ticks,cmap,str,orient)
 %
 % <range> is the range like [0 1]
 % <ticks> are the desired tick values like 0:.1:1.  can be [].
@@ -10,6 +10,7 @@ function drawcolorbar(range,ticks,cmap,str,orient)
 %
 % draw an image and a colorbar on the current figure.
 % tick marks are omitted from the colorbar.
+% return the handle to the colorbar.
 %
 % example:
 % figure; drawcolorbar([0 10],0:3:9,hot(10),'Test',1);
