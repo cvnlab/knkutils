@@ -31,7 +31,7 @@ dir0 = dir0{1};
 if isempty(f)  % VOODOO.  BE CAREFUL.
   pre0 = '';
 else
-  pre0 = [f '/'];
+  pre0 = [f filesep];
 end
-consolidatemat([pre0 file0 '/*.mat'],[pre0 file0 '.mat'],varsexclude);
+consolidatemat([pre0 file0 filesep '*.mat'],[pre0 file0 '.mat'],varsexclude);
 f = [pre0 file0 '.mat'];
