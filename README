@@ -154,6 +154,7 @@ programming/
   reportmemoryandtime - use a warning to report the current memory usage and the current time
   rowfun - apply a function to each row of a 2D matrix
   runmatlabinbg.pl - run MATLAB in the background for a single function/script call
+  saveemptymat - save an empty .mat file
   setrandstate - induce randomness by (randomly) setting the seed of rand and randn
   sgerun2 - run MATLAB code using the Sun Grid Engine (SGE)
   statusdots - write out dots (.) indicating progress of code execution
