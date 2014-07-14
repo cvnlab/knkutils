@@ -62,11 +62,12 @@ for p=1:length(m)
   % do in chunks
   chunks = chunking(1:size(m{p},2),ceil(size(m{p},2)/numchunks));
   temp = {};
+  mtemp = m{p};
   parfor q=1:length(chunks)
-    temp{q} = interp1(timeorig,m{p}(:,chunks{q}),timenew,'cubic','extrap');
+    temp{q} = interp1(timeorig,mtemp(:,chunks{q}),timenew,'cubic','extrap');
   end
   m{p} = catcell(2,temp);
-  clear temp;
+  clear temp mtemp;
 
   % prepare output
   msize(dim) = numsamples;
