@@ -491,7 +491,8 @@ pt/
   ptviewimage - show one or more images and allow user to position the images
   ptviewmovie - show a stimulus movie
   ptviewmoviecheck - check the results of ptviewmovie.m
-  showmulticlass - show some specific stimulus experiments
+  runretinotopy - script for retinotopy experiment
+  showmulticlass - helper function for various experiments
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% COPYRIGHT
 
