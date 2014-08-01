@@ -41,7 +41,7 @@ trold = 0.1;
 hrf = conv(hrf,ones(1,max(1,round(duration/trold))));
 
 % resample to desired TR
-hrf = interp1((0:length(hrf)-1)*trold,hrf,0:tr:(length(hrf)-1)*trold,'cubic');
+hrf = interp1((0:length(hrf)-1)*trold,hrf,0:tr:(length(hrf)-1)*trold,'pchip');
 
 % make the peak equal to one
 hrf = hrf / max(hrf);
