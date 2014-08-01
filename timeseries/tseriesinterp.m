@@ -64,7 +64,7 @@ for p=1:length(m)
   temp = {};
   mtemp = m{p};
   parfor q=1:length(chunks)
-    temp{q} = interp1(timeorig,mtemp(:,chunks{q}),timenew,'cubic','extrap');
+    temp{q} = interp1(timeorig,mtemp(:,chunks{q}),timenew,'pchip','extrap');
   end
   m{p} = catcell(2,temp);
   clear temp mtemp;
