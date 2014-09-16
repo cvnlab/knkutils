@@ -1,6 +1,6 @@
-function [keytimes,badtimes] = ptviewmoviecheck(timeframes,timekeys,deltatime,badkey,deltatimeBAD)
+function [keytimes,badtimes,keybuttons] = ptviewmoviecheck(timeframes,timekeys,deltatime,badkey,deltatimeBAD)
 
-% function [keytimes,badtimes] = ptviewmoviecheck(timeframes,timekeys,deltatime,badkey,deltatimeBAD)
+% function [keytimes,badtimes,keybuttons] = ptviewmoviecheck(timeframes,timekeys,deltatime,badkey,deltatimeBAD)
 % 
 % <timeframes>,<timekeys> are outputs from ptviewmovie.m
 % <deltatime> (optional) is the time differential in seconds that must
@@ -13,9 +13,11 @@ function [keytimes,badtimes] = ptviewmoviecheck(timeframes,timekeys,deltatime,ba
 %
 % draw some figures visualizing the contents of <timeframes> and <timekeys>.
 % return a vector with keypress times in <keytimes> and a vector with
-% badkey times in <badtimes>.
+% badkey times in <badtimes>.  the buttons corresponding to <keytimes> are
+% returned in <keybuttons>.
 %
 % history:
+% - 2014/09/16 - now return keybuttons as output
 % - 2014/06/12 - revamp to function behavior. now return useful outputs.
 %
 % example:
@@ -59,12 +61,14 @@ end
 % now process non-badkeys
 oldkey = ''; oldkeytime = -Inf; cnt = 0;
 keytimes = [];
+keybuttons = {};
 xvals = [];
 for p=1:size(timekeysB,1)
   if ~isequal(timekeysB{p,2},'absolutetimefor0') && ...
      (isempty(badkey) || ~isequal(timekeysB{p,2}(1),badkey)) && ...
      (timekeysB{p,1}-oldkeytime > deltatime)     %%%REMOVED ~isequal(timekeysB{p,2},oldkey) ||  [this means all the same]
     keytimes = [keytimes timekeysB{p,1}];  % record
+    keybuttons = [keybuttons {timekeysB{p,2}}];  % record
     straightline(timekeysB{p,1},'v',[getcolorchar(cnt) '-']);
     text(timekeysB{p,1},1.1 + 0.5*rand,timekeysB{p,2}(1),'HorizontalAlignment','center','Color',getcolorchar(cnt));
     cnt = cnt + 1;
