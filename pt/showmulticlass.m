@@ -957,12 +957,12 @@ else
   case {108}
     if isseq
       framedesign = {};
-      for p=1:22
+      for p=1:24
         framedesign{p} = isseq;
       end
     else
       framedesign = {};
-      for p=1:22
+      for p=1:24
         temp = reshape(1:12,[3 4]);  % skeleton index
         ixout = randintrange(1,3);   % one of the three won't have a repeat
         ixin = setdiff(1:3,ixout);   % the other two will
@@ -1211,7 +1211,7 @@ if isseq
     trialpattern = eye(32);
     onpattern = [1];
   case {108}
-    trialpattern = eye(22);
+    trialpattern = eye(24);
     onpattern = [1];
   case {67 68 69 70 71 72}
     trialpattern = eye(41+5);
@@ -1532,7 +1532,7 @@ else
   case {95 96 97 98 99 100 107}
     classorder = [1:32];
   case {108}
-    classorder = [1:22];
+    classorder = [1:24];
   case {59 60 61}
 % % DO THIS ONCE:  [idea: just split randomly into thirds.]
 %     tempF = permutedim(1:165);
