@@ -106,6 +106,7 @@ indexing/
   matrixindex - return different slices through a matrix based on an indexing matrix
   permutedim - shuffle a matrix along a certain dimension or globally
   picksubset - return a random subset of the elements in a matrix
+  removerepeats - get rid of runs of consecutive items
   resamplingindices - get indices corresponding to the process of resampling
   slicematrix - return a slice from a matrix
   subscript - get elements using a vector or cell vector of indices
@@ -166,6 +167,7 @@ programming/
 string/
   cell2str - convert 2D cell matrix into string representation
   cell2str2 - convert cell vector of strings into a single string that names each string
+  fixstr - fix string for use with MATLAB's figure functions
   makedirid - return a string with elements of a path joined with '_'
   makeletters - generate a cell vector of letter characters
   mat2cellstr - convert a matrix of numbers into a cell matrix of strings
