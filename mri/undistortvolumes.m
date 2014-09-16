@@ -22,7 +22,9 @@ function [newvols,voloffset,validvol] = undistortvolumes(vols,volsize,pixelshift
 %   will be resampled at the new location.  for example, if <extratrans>
 %   is [1 0 0 1; 0 1 0 0; 0 0 1 0; 0 0 0 1], then this will cause volumes to be 
 %   resampled at a location corresponding to a one-voxel shift along the first
-%   dimension.  default: eye(4).
+%   dimension.  <extratrans> can also be {X} where X is 4 x vertices, indicating
+%   the exact locations (relative to the matrix space of the 3D volume) at which
+%   to sample the data.  in this case, <targetres> must be [].  default: eye(4).
 % <targetres> (optional) is
 %   (1) [X Y Z], a 3-element vector with the number of voxels desired for the final 
 %       output.  if supplied, then volumes will be interpolated only at the points 
@@ -61,6 +63,7 @@ function [newvols,voloffset,validvol] = undistortvolumes(vols,volsize,pixelshift
 % we use parfor to speed up execution.
 %
 % history:
+% 2014/09/16 - allow <extratrans> to be the {X} case
 % 2011/03/19 - final polishing of recent changes.  these included: switch to ba_interp3; use ba_interp3 for forward distortion; new output validvol; explicit on data format issues; more flexible input; int16 for the output
 % 2011/03/16 - allow <pixelshifts> to be 4D
 % 2011/03/15 - report some messages to stdout; use ba_interp3_wrapper; switch to ba_interp3 for forward distortion calculation
@@ -90,18 +93,31 @@ end
 voldim = sizefull(vols,3);
 wantspecialcrop = iscell(targetres) && targetres{3}==1;
 
-% construct coordinates (which are always in matrix space)
-if iscell(targetres)
-  targetres = targetres{1};  % now, targetres is always a 3-element vector.  note that we ignore targetres{2} currently!
-  [xx,yy,zz] = ndgrid(1:targetres(1), ...
-                      1:targetres(2), ...
-                      1:targetres(3));
+% deal with special vertex/flat case
+if iscell(extratrans)
+  targetres = [size(extratrans{1},2) 1];
+  dimdata = 1;
 else
-  [xx,yy,zz] = ndgrid(resamplingindices(1,size(vols,1),targetres(1)), ...
-                      resamplingindices(1,size(vols,2),targetres(2)), ...
-                      resamplingindices(1,size(vols,3),targetres(3)));
+  dimdata = 3;
 end
-coords = [flatten(xx); flatten(yy); flatten(zz); ones(1,numel(xx))];
+
+% construct coordinates (which are always in matrix space)
+if iscell(extratrans)
+  coords = extratrans{1};
+  extratrans = 1;  % necessary hack because later we will do inv(extratrans)
+else
+  if iscell(targetres)
+    targetres = targetres{1};  % now, targetres is always a 3-element vector.  note that we ignore targetres{2} currently!
+    [xx,yy,zz] = ndgrid(1:targetres(1), ...
+                        1:targetres(2), ...
+                        1:targetres(3));
+  else
+    [xx,yy,zz] = ndgrid(resamplingindices(1,size(vols,1),targetres(1)), ...
+                        resamplingindices(1,size(vols,2),targetres(2)), ...
+                        resamplingindices(1,size(vols,3),targetres(3)));
+  end
+  coords = [flatten(xx); flatten(yy); flatten(zz); ones(1,numel(xx))];
+end
 
 % here's some idea on the tricky ordering issues:
 % - in the reverse direction, we would first undistort each volume,
@@ -220,7 +236,11 @@ else
 end
 
 % prepare output
-newvols = permute(newvols,[2 3 4 1]);
+if dimdata==3
+  newvols = permute(newvols,[2 3 4 1]);
+else
+  newvols = permute(newvols,[2 1]);
+end
 
 % report
 fprintf('done (elapsed time %.1f minutes).\n',etime(clock,stime)/60);
