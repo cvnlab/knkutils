@@ -1,6 +1,6 @@
-function f = calcconfusionmatrix(m1,m2,mode)
+function f = calcconfusionmatrix(m1,m2,mode,wantnanpp)
 
-% function f = calcconfusionmatrix(m1,m2,mode)
+% function f = calcconfusionmatrix(m1,m2,mode,wantnanpp)
 %
 % <m1> is points x dimensions1
 % <m2> (optional) is points x dimensions2
@@ -13,6 +13,7 @@ function f = calcconfusionmatrix(m1,m2,mode)
 %   4 means Euclidean distance
 %   5 means use dot after unit-length-normalize
 %   default: 2.
+% <wantnanpp> (optional) is whether to perform NaN pre-processing. default: 1.
 %
 % return something like <m2>'*<m1>, which has the size dimensions2 x dimensions1.
 % if <mode> is 0, the result is exactly that.
@@ -26,8 +27,8 @@ function f = calcconfusionmatrix(m1,m2,mode)
 % if <mode> is 4, we calculate the Euclidean distance.
 % if <mode> is 5, this is like 2 except we don't subtract the mean first.
 %
-% we perform some pre-processing on <m1> and <m2> to deal with the case where
-% one or more elements of these matrices are NaN.  specifically, we omit all
+% if <wantnanpp>, we perform some pre-processing on <m1> and <m2> to deal with the case 
+% where one or more elements of these matrices are NaN.  specifically, we omit all
 % rows of <m1> and <m2> for which at least one element is NaN.  after that,
 % we proceed with the calculations described above.
 %
@@ -38,6 +39,7 @@ function f = calcconfusionmatrix(m1,m2,mode)
 % calcconfusionmatrix(x)
 %
 % history:
+% 2014/09/16 - add <wantnanpp> input
 % 2010/06/05 - implement detection and exclusion of rows with NaNs
 
 % input
@@ -47,11 +49,16 @@ end
 if ~exist('mode','var') || isempty(mode)
   mode = 2;
 end
+if ~exist('wantnanpp','var') || isempty(wantnanpp)
+  wantnanpp = 1;
+end
 
 % propagate NaNs
-bad = any(isnan(m1),2) | any(isnan(m2),2);
-m1 = m1(~bad,:);
-m2 = m2(~bad,:);
+if wantnanpp
+  bad = any(isnan(m1),2) | any(isnan(m2),2);
+  m1 = m1(~bad,:);
+  m2 = m2(~bad,:);
+end
 
 % do it
 switch mode
