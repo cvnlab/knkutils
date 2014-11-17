@@ -18,20 +18,24 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 %                 C is alpha for the fixation dot when flips happen
 %   {D E} where D is a set of colors (uint8 Nx3) (see the negative-integers case for fixationcolor in ptviewmovie.m)
 %               E is an alpha value in [0,1]
-%   {F} where F is the {A B C D E F G} case of <fixationorder> in ptviewmovie.m
-%     note that F should really only be {A B C D E F} since we will add G if <existingfile> is supplied.
+%   {F} where F is the {A B C D E F G H} case of <fixationorder> in ptviewmovie.m
+%     note that F should really only be {A B C D E F [] H} since we will add G if <existingfile> is supplied.
+%   {G} where G is the {A C X} case of <fixationorder> in ptviewmovie.m.  actually, these
+%     are just a subset of the inputs; the idea is that this function fills in the rest 
+%     of the inputs for you.  if you supply <existingfile>, we will re-use the appropriate
+%     values from that file.
 % <fixationsize> is size in pixels for fixation dot or an entire alpha image for the fixation (see ptviewmovie.m)
 % <triggerfun> is the trigger function to call when starting the movie (see ptviewmovie.m)
 % <ptonparams> is a cell vector with parameters for pton.m
 % <soafun> is a function that returns a (presumably stochastic) stimulus-onset asynchrony for the 
 %   fixation dot (in number of movie frames).  the output must be a positive integer.
-%   <soafun> is ignored when <fixationinfo> is {F}.
+%   <soafun> is ignored when <fixationinfo> is {F} or {G}.
 % <skiptrials> is number of trials to skip at the beginning
 % <images> (optional) is a speed-up (no dependencies).  <images> can be reused only if <setnum> 
 %   stays within [1 2 3 7 8] or [4 5] or [6] or [9] or [10 11] or [12 13] or [14] or [15] or
 %                [16 17] or [18 19] or [20 21] or [22 23 23.5 24 25 26] or [27 28] or [29] or [30 31] or [32 33 35 36 37] or
 %                [34] or [38 39 40 41  48] or [42 43 44] or [45] or [46 47] or [49 55] or [50] or [51 52] or 
-%                [53 54] or [56 57 58] or [59 60 61] or [62 63 64 65] or [66] or [67 68 69 70 71 72] or
+%                [53 54] or [56 57 58] or [59 60 61] or [62 63 64 65] or [66] or [109 110] or [67 68 69 70 71 72] or
 %                [73 74 75 76 77] or [78 79 80 81] or [82 83 84 85 86 87  88] or [89 90 91 92 93 94] or 
 %                [95 96 97 98 99 100] or [101 102 103 104 105 106] or [107] or [108]
 % <setnum> (optional) is
@@ -105,6 +109,8 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 %   64 is the categoryC7 part 3.  <dres> should be [].
 %   65 is the categoryC7 part 4.  <dres> should be [].
 %   66 is the categoryC8.  <dres> should be [].
+%   109 is the categoryC8 (trialtask version) part 1.  <dres> should be [].
+%   110 is the categoryC8 (trialtask version) part 2.  <dres> should be [].
 %   67 is the categoryC9 part 1a.
 %   68 is the categoryC9 part 2a.
 %   69 is the categoryC9 part 1b.
@@ -142,6 +148,8 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 %   106 is retinotopyCWORDS: wedge/ring mismash (slow: 5-Hz refresh + 5-Hz aperture refresh)
 %   107 is readingC
 %   108 is readingD
+%   109 is (see above)
+%   110 is (see above)
 %   default: 1.
 % <isseq> (optional) is whether to do the special sequential showing case.  should be either 0 which
 %   means do nothing special, or a positive integer indicating which frame to use.  if a positive
@@ -166,7 +174,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 % <framefiles> (optional) is the input to ptviewmovie.m
 % <trialparams> (optional) is the {B E F G H} of the <trialtask> inputs
 %   to ptviewmovie.m.  specify when <setnum> is 51 or 52 or 53 or 54 or 56,57,58, 59,60,61, 
-%   62,63,64,65, 66,  78,79
+%   62,63,64,65, 66,109,110  78,79
 % <eyelinkfile> (optional) is the .edf file to save eyetracker data to.
 %   default is [] which means to do not attempt to use the Eyelink.
 % <maskimages> (optional) is a speed-up (no dependencies).  <maskimages> is applicable and can be reused only
@@ -178,6 +186,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 % show the stimulus and then save workspace (except the variable 'images') to <outfile>.
 
 % history:
+% 2014/10/08 - implement the {G} case for <fixationinfo>
 % 2014/07/15 - institute the input "stimulusdir" and release publicly.
 % 2014/05/29 - use imresizememory to resample
 % 2013/12/20 - add framecolor handling
@@ -250,7 +259,7 @@ case {56 57 58}
   stimfile = fullfile(stimulusdir,'workspace_categoryC5.mat');
 case {62 63 64 65}
   stimfile = fullfile(stimulusdir,'workspace_categoryC7.mat');
-case {66}
+case {66 109 110}
   stimfile = fullfile(stimulusdir,'workspace_categoryC8.mat');
 case {95 96 97 98 99 100}
   stimfile = fullfile(stimulusdir,'workspace_readingB.mat');
@@ -357,6 +366,17 @@ if ~exist('specialoverlay','var') || isempty(specialoverlay)
 end
 if ~isempty(existingfile)
   efile = load(existingfile,'framedesign','classorder','fixationorder','trialoffsets','digitrecord');
+end
+
+%%%%%%%%%%%%% some experiments need some pre-setup
+
+switch setnum(1)
+case {109 110}
+  if isempty(existingfile)
+    [mastercuestim,digitnamerecord,digitcolorrecord,gentrialpattern,designmatrix] = setupmulticlass109(setnum(1));
+  else
+    load(existingfile,'mastercuestim','digitnamerecord','digitcolorrecord','gentrialpattern','designmatrix');
+  end
 end
 
 %%%%%%%%%%%%% load in the stimuli
@@ -878,13 +898,20 @@ else
         framedesign{p} = subscript(permutedim(1:20),1:7);
       end
     end
-  case {66}
+  case {66 109 110}
     if isseq
       framedesign = {};
       for p=1:25
         framedesign{p} = isseq;
       end
     else
+    
+      switch setnum(1)
+      case 66
+        numpresrun = 2;
+      case {109 110}
+        numpresrun = 3;
+      end
       
       % define
       numviewpoints = 7;
@@ -896,8 +923,8 @@ else
       for p=1:25
         framedesign{p} = [];
 
-        % there are two presentations in each run
-        for zz=1:2
+        % there are several presentations in each run
+        for zz=1:numpresrun
         
           % generate a sequence of viewpoint numbers.  viewpoint always changes.
           while 1
@@ -918,6 +945,13 @@ else
           
           % record
           framedesign{p}(zz,:) = upsamplematrix((idnums-1)*numviewpoints + vpnums,[1 2],[],[],'nearest');
+          
+          % special case (REPEAT PHYSICALLY IDENTICAL)
+          % thus, it is here that physicality of face sequences is enforced (all three tasks see the same faces).
+          if ismember(setnum(1),[109 110])
+            framedesign{p} = repmat(framedesign{p}(zz,:),[numpresrun 1]);
+            break;
+          end
 
         end
       end
@@ -1204,7 +1238,7 @@ if isseq
   case {62 63 64 65}
     trialpattern = eye(49+10);
     onpattern = [1];
-  case {66}
+  case {66 109 110}
     trialpattern = eye(25);
     onpattern = [1];
   case {95 96 97 98 99 100 107}
@@ -1257,6 +1291,9 @@ else
   case {66}
     load(infofile_categoryC8,'trialpattern','onpattern');
     onpattern = upsamplematrix(onpattern,[1 2],[],[],'nearest');
+  case {109 110}
+    trialpattern = gentrialpattern;
+    onpattern = [zeros(1,4*2) ones(1,7*2) zeros(1,2)];
   case {95}
     load(infofile_readingB,'trialpattern','onpattern');
   case {96}
@@ -1529,6 +1566,17 @@ else
     end
   case {66}
     classorder = [1:25];
+  case {109 110}
+% % DO THIS ONCE:  [idea: in run1 show a random half of the 25 (13), in run2 show the other half (12)]
+%     tempF = permutedim(1:25);
+%     temp1 = [tempF(1:13)]; mat2str(sort(temp1))
+%     temp2 = [tempF(13+(1:12))]; mat2str(sort(temp2))
+    switch setnum(1)
+    case 109
+      classorder = [1 2 6 7 11 12 14 15 19 20 21 22 25];  % note that randomization is implemented via setupmulticlass109
+    case 110
+      classorder = [3 4 5 8 9 10 13 16 17 18 23 24];
+    end
   case {95 96 97 98 99 100 107}
     classorder = [1:32];
   case {108}
@@ -1627,7 +1675,7 @@ else
     % N/A but do this just so the below line won't fail
     classorder = [];
   end
-  if ~isseq && ~ismember(setnum(1),[26])
+  if ~isseq && ~ismember(setnum(1),[26 109 110])  % 109-110 is special. we pre-specify, so no randomization etc.
     classorder = permutedim(classorder);
     
     % make sure beginning and end are stimulus trials and make sure no two consecutive blank trials
@@ -1996,14 +2044,14 @@ otherwise  % this is the normal case
         temp = onpattern;
       
         % this is a special case to modulate position on the fly  [%% framecolor not handled because specialness of setnum]
-        if ismember(setnum,[66 67 68 69 70 71 72])
+        if ismember(setnum(1),[66 109 110 67 68 69 70 71 72])
         
           % they all come from the first and only class, so there is no offset here
           temp(onpattern==1) = framedesign0{stimclass}(1,:);
         
           % taken from prepareimages_categoryC.m:
           switch setnum
-          case {66}
+          case {66 109 110}
             csfirst = [-189 -189 -189 -189 -189;-94 -94 -94 -94 -94;0 0 0 0 0;95 95 95 95 95;189 189 189 189 189];
             cssecond = [-189 -94 0 95 189;-189 -94 0 95 189;-189 -94 0 95 189;-189 -94 0 95 189;-189 -94 0 95 189];
             gridnn = 5;
@@ -2062,12 +2110,31 @@ if isseq
 %   fixationcolor = uint8([255 0 0]);
 else
   if iscell(fixationinfo{1})
-    fixationorder = fixationinfo{1};
-    fixationcolor = [];
+  
+    % this is focase3 (the original way)
+    if length(fixationinfo{1}{2})==2
+  
+      fixationorder = fixationinfo{1};
+      fixationcolor = [];
     
-    % if we have an existing file, hack it in
-    if ~isempty(existingfile)
-      fixationorder{7} = efile.digitrecord;
+      % if we have an existing file, hack it in
+      if ~isempty(existingfile)
+        fixationorder{7} = efile.digitrecord;
+      end
+    
+    % this is focase4 (the new way)
+    else
+    
+      % if we have an existing file, use it
+      if ~isempty(existingfile)
+        fixationorder = efile.fixationorder;  % seems easiest way. just shove it in.
+      else
+        fixationorder = fixationinfo{1};  % {A C X}
+        fixationorder{4} = digitnamerecord;
+        fixationorder{5} = digitcolorrecord;
+      end
+      fixationcolor = [];
+
     end
 
   else
@@ -2122,7 +2189,7 @@ end
 
 % figure out trialtask [i.e. for the red dot task]
 switch setnum(1)
-case {51 52 53 54 56 57 58 59 60 61 62 63 64 65 66}
+case {51 52 53 54 56 57 58 59 60 61 62 63 64 65 66 109 110}
 
   % figure out A [THIS IS VOODOO, WATCH OUT]
   temp = strsplit(char(frameorder(1,:)),char(0));
@@ -2162,6 +2229,23 @@ case {51 52 53 54 56 57 58 59 60 61 62 63 64 65 66}
   % add on if we have an existingfile
   if ~isempty(existingfile)
     trialtask{9} = efile.trialoffsets;
+  end
+  
+  % now, we handle the special B case (note: this is a little dumb if existingfile is specified, since the existingfile should override)
+  if ismember(setnum(1),[109 110])
+    switch setnum(1)
+    case 109
+      nin = 13;
+    case 110
+      nin = 12;
+    end
+    mastercuestim0 = mastercuestim(floor(mastercuestim/10) <= nin);  % extract only stimulus trials
+    assert(size(A,1)==length(mastercuestim0));  % sanity check
+    trialgrouping = {};
+    for p=1:nin
+      trialgrouping{p} = find(floor(mastercuestim0/10)==p);  % 1 x 4 vector of indices relative to the valid stimulus trials
+    end
+    trialtask{2} = {trialtask{2} trialgrouping};
   end
 
 case {78 79}
@@ -2311,3 +2395,135 @@ vars = vars(cellfun(@(x) ~isequal(x,'images') & ~isequal(x,'maskimages') & ~iseq
 
 % save
 save(outfile,vars{:});
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function [mastercuestim,digitnamerecord,digitcolorrecord,gentrialpattern,designmatrix] = setupmulticlass109(setnum)
+
+% this function generates a fresh random specification for the 109-110 experiment.
+
+% notes:
+% - 18-s rest + 51 trials x 6-s trials + 18-s rest = 342 seconds (171 TRs)
+% - 18-s rest + 48 trials x 6-s trials + 18-s rest = 324 seconds (162 TRs)
+% - (13 stimuli + 3 blank trials) x 3 tasks + 3 blank-blank trials = 51 trials
+% - (12 stimuli + 3 blank trials) x 3 tasks + 3 blank-blank trials = 48 trials
+% - blank trials still involve cue and digits; blank-blank trials just involve digits
+% - GDF: Digit, Dot, Face
+% - enforce physical identicality across tasks (including the blank trials)
+%   - this includes digit sequence and face frames (if applicable) and dots
+
+% define
+taskletters = 'GDF';
+
+% define
+switch setnum
+case 109
+  nin = 13;
+  tottrials = 51;
+  classorder = [1 2 6 7 11 12 14 15 19 20 21 22 25];  % ugly, steal this from above
+case 110
+  nin = 12;
+  tottrials = 48;
+  classorder = [3 4 5 8 9 10 13 16 17 18 23 24];  % ugly, steal this from above
+end
+
+% this tells us the master sequence
+mastercuestim = flatten(bsxfun(@plus,[1 2 3]',10*(1:(nin+3))));  % 1 x trials
+  % mod(a,10) is 1-3 indicating which task (the cue to use)
+  % floor(a/10) is 1-(nin+3) indicating which stimulus (the true stimulus class is controlled by classorder) (the extra 3 are the blank cases)
+  % however, NaNs can exist and indicate blank-blank trials
+
+% add the blank-blanks
+mastercuestim = [mastercuestim repmat(NaN,[1 3])];
+assert(length(mastercuestim)==tottrials);
+
+% randomize, make sure beginning and end are stimulus trials and make sure no two consecutive blank-blank trials
+while 1
+  mastercuestim = permutedim(mastercuestim);
+  wherenan = find(isnan(mastercuestim));
+  if ~(any(ismember([1 length(mastercuestim)],wherenan)) || any(diff(wherenan)==1))
+    break;
+  end
+end
+
+% initialize full record of digits
+digitnamerecord = NaN*zeros(1,4*(18 + tottrials*6 + 18));
+digitcolorrecord = zeros(size(digitnamerecord));  % 0 means black, 1 means white
+
+% handle initial blank period
+ix = linspacefixeddiff(1,2,2*18);  % 2 digits per second
+digitnamerecord(:,ix) = randintrange(0,9,[1 length(ix)])+1;  % fully random [1-10]
+digitcolorrecord(:,ix) = repmat([1 0],[1 2*18/2]);  % white/black alternation
+
+% record
+clock0 = sum(100*clock);
+
+% handle each trial
+for p=1:length(mastercuestim)
+
+  % calc
+  offset = 4*18 + (p-1)*(4*6);
+
+  % handle blank-blank trials up front
+  if isnan(mastercuestim(p))
+    ix = linspacefixeddiff(1,2,2*6);  % 2 digits per second
+    digitnamerecord(:, offset + ix) = randintrange(0,9,[1 length(ix)])+1;  % fully random [1-10]
+    digitcolorrecord(:,offset + ix) = repmat([1 0],[1 2*6/2]);  % white/black alternation
+    continue;
+  end
+
+  % make deterministic depending on 1-(nin+3) (thus, different tasks should have identical digits).
+  % thus, it is here that physicality of digit sequences is enforced (all three tasks see the same digits).
+  setrandstate({clock0+999*floor(mastercuestim(p)/10)});
+  
+  % cue (red)
+  digitnamerecord(:, offset + (1:2)) = repmat(10+(double(taskletters(mod(mastercuestim(p),10)))-64),[1 2]);
+  digitcolorrecord(:,offset + (1:2)) = 2;
+  
+  % stream of digits (9 of them)
+  ix = linspacefixeddiff(1,2,9);
+  digitnamerecord(:, offset + 4 + ix) = [randintrange(0,9,[1 9],1)+1];  % random but no repeat!
+  digitcolorrecord(:,offset + 4 + ix) = [repmat([1 0],[1 4]) 1];
+  
+  % repeat the digit maybe
+  for q=1:1
+    if rand < .5
+      fr = randintrange(2,9);
+      digitnamerecord(q,offset + 4 + ix(fr)) = digitnamerecord(q,offset + 4 + ix(fr-1));
+    end
+  end
+
+end
+
+% reset rand seed
+setrandstate;
+
+% handle ending blank period
+offset = 4*18 + 4*(tottrials*6);
+ix = linspacefixeddiff(1,2,2*18);  % 2 digits per second
+digitnamerecord(:,offset + ix) = randintrange(0,9,[1 length(ix)])+1;  % fully random [1-10]
+digitcolorrecord(:,offset + ix) = repmat([1 0],[1 2*18/2]);  % white/black alternation
+
+% now deal with gentrialpattern [note that we intend to circumvent classorder (i.e. we don't randomize it)].
+% this has a limited number of columns (e.g. 13 or 12), and the columns have random onsets.
+gentrialpattern = zeros(3+tottrials+3,nin);
+for p=1:length(mastercuestim)
+  stimnum = floor(mastercuestim(p)/10);
+  if ~isnan(stimnum) && stimnum <= nin
+    gentrialpattern(3+p,stimnum) = 1;
+  end
+end
+
+% now deal with designmatrix
+designmatrix = zeros(3+tottrials+3,25*3+3);  % stimulus-evoked digit, dot, face; cue-related digit, dot, face
+for p=1:length(mastercuestim)
+  if isnan(mastercuestim(p))
+    continue;
+  end
+  stimnum = floor(mastercuestim(p)/10);
+  tasknum = mod(mastercuestim(p),10);
+  if stimnum <= nin
+    designmatrix(3+p,(tasknum-1)*25+classorder(stimnum)) = 1;
+  end
+  designmatrix(3+p,25*3+tasknum) = 1;
+end
