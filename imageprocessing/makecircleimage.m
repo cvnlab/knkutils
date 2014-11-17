@@ -1,6 +1,6 @@
-function [f,xx,yy] = makecircleimage(res,r,xx,yy,r2,mode,center)
+function [f,xx,yy] = makecircleimage(res,r,xx,yy,r2,mode,center,sc)
 
-% function [f,xx,yy] = makecircleimage(res,r,xx,yy,r2,mode,center)
+% function [f,xx,yy] = makecircleimage(res,r,xx,yy,r2,mode,center,sc)
 %
 % <res> is the number of pixels along one side
 % <r> is size of radius in pixels
@@ -17,6 +17,10 @@ function [f,xx,yy] = makecircleimage(res,r,xx,yy,r2,mode,center)
 %   default: 0.
 % <center> (optional) is [R C] with the row and column indices of
 %   the center.  can be decimal.  default: [(1+<res>)/2 (1+<res>)/2].
+% <sc> (optional) is [SCX SCY] with the scale factor along the x- and
+%   y-directions.  for example, [0.5 0.9] means to shrink the x-direction
+%   by 50% and shrink the y-direction by 10%.  this option takes effect
+%   only when <mode> is 0.  default: [1 1].
 %
 % the image is a white circle (1) on a black background (0).
 %   (when <mode> is 1-4, the image is a white rectangle (1)
@@ -42,6 +46,9 @@ end
 if ~exist('center','var') || isempty(center)
   center = [(1+res)/2 (1+res)/2];
 end
+if ~exist('sc','var') || isempty(sc)
+  sc = [1 1];
+end
 
 % calc
 r = r/res;
@@ -52,7 +59,7 @@ center(1) = -center(1);
 % figure out regions
 switch mode
 case 0
-  radius = sqrt((xx-center(2)).^2 + (yy-center(1)).^2);
+  radius = sqrt((xx-center(2)).^2/sc(1).^2 + (yy-center(1)).^2/sc(2).^2);
 case 1
   radius = abs((xx-center(2)));
 case 2
