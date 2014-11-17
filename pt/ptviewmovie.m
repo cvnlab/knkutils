@@ -56,7 +56,7 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %       alpha value is used for all of the fixation colors.  in this alternative 
 %       case, there are multiple possible fixation dot colors, all
 %       of which get blended with a fixed alpha value.
-%   (3) {A B C D E F G} where A is the font size in (0,1), which is relative to
+%   (3) {A B C D E F G H} where A is the font size in (0,1), which is relative to
 %       the size indicated by the first element of <fixationsize>; B is [ON OFF] 
 %       where ON is a non-negative integer indicating the number of
 %       frames for a digit to last and OFF is a non-negative integer
@@ -71,18 +71,27 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %       white and/or black (you need only one when F is 0, but you need two when
 %       F is 1, and you can allocate more if you want to take up
 %       entries); F (optional) is 0 means white digits and 1 means alternate
-%       white and black digits (default: 0); and G (optional) is a computed
+%       white and black digits (default: 0); G (optional) is a computed
 %       digitrecord from a previous run (if this is supplied, there is no
-%       stochasticity, as we just use what happened before).  we show a stream of 
+%       stochasticity, as we just use what happened before); H (optional) is
+%       [H V] indicating horizontal and vertical offsets.  we show a stream of 
 %       random digits.  if C is 0, then the digits are shown on a gray disc that is
 %       smoothly alpha-blended into the rest of the stimulus, with the
 %       characteristics of this disc being determined by <fixationsize>. if C is
 %       1, then the digits are directly superimposed on the rest of the stimulus.
 %       before and after the movie, we show the digit '0'. note that
-%       <fixationcolor> is ignored when <fixationorder> is of the {A B C D E F G}
+%       <fixationcolor> is ignored when <fixationorder> is of the {A B C D E F G H}
 %       case.  also, note that if C is 1, then only the first element of
 %       <fixationsize> is used (to determine the transparent box within
 %       which the digits are presented).
+%   (4) {A C X Y Z} where A and C are just like from case (3) and where X
+%       is a cell vector of [H V] indicating horizontal and vertical offsets for each
+%       digit, Y is numdigits x frames where each row specifies the digit to
+%       show on each frame (1-10 mean '0':'9', 11-36 mean 'A':'Z', NaN means
+%       none), and Z is numdigits x frames where each row specifies the color 
+%       of the digit on each frame (0: black, 1: white, 2: red, 3: green,
+%       4: blue, 5: yellow, 6: magenta, 7: cyan).  this case is essentially a 
+%       modified version of case (3).  if this case is used, <specialcon> must be [].
 %   default: ones(1,1+size(<frameorder>,2)+1).
 % <fixationcolor> (optional) is a uint8 vector of dimensions 1 x 3, 
 %   indicating the color to use for the fixation dot.  when <fixationorder>
@@ -168,8 +177,9 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %           e.g. for the fixation dot.  these are the linear values (before gamma correction).
 %           we allocate 256-N entries to deal with the normal stimulus display.
 %           thus, values in <images> should range from 0 through 255-N.  note that
-%           when <fixationorder> is the {A B C D E F G} case, we ignore the C input and always
-%           use E CLUT entries at the end of the gamma table.
+%           when <fixationorder> is the {A B C D E F G H} case, we ignore the C input 
+%           and always use E CLUT entries at the end of the gamma table, and when
+%           <fixationorder> is the {A C X Y Z} case, we use 2 CLUT entries at the end.
 %         D is how many movie frames before a gamma change to attempt to do the 
 %           gamma change.  the reason for this is that the gamma changes seem to take
 %           a relatively long time and trying to do it at the last minute produces
@@ -190,7 +200,12 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %       trials should be mutually exclusive with respect to frames.
 %     B is the fraction of trials (on average) that should present a dot.  we randomly flip a coin
 %       for each trial to decide whether a dot is presented on that trial.  if negative, then
-%       we enforce the fact that a dot cannot be presented on two successive trials.
+%       we enforce the fact that a dot cannot be presented on two successive trials.  can also
+%       be of the form {B C} where B is as usual (but cannot be negative) and C is a cell vector
+%       of trial numbers that go together.  for example, if C is {[1 3 5] [2 4]}, then a coin
+%       is flipped for the first group, and if we decide to show a dot, the dot is shown
+%       identically for the 1st, 3rd, and 5th trials, and similarly for the second group
+%       (consisting of the 2nd and 4th trials).
 %     C is a cell vector of elements. each element should be a 2 x V matrix, each column 
 %       indicating a valid location for the dot.  the units should be signed x- and y-coordinates 
 %       in pixel units and is to be interpreted relative to the fixation location.  note that
@@ -234,7 +249,7 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   shown on each frame (only the onsets of digits are recorded; the rest of the entries are NaN),
 %   and B and C are auxiliary items that are useful for replicating the exact behavior (through
 %   appropriate call to <fixationorder>).  this input will be returned as [] if <fixationorder> 
-%   is not the {A B C D E F G} case.
+%   is not the {A B C D E F G H} case.
 % return <trialoffsets> as 2 x size(<frameorder>,2) with NaNs in all columns except those columns
 %   corresponding to the presentation of the dot; for these columns, the first and second rows
 %   have the x- and y-offsets of the dot in pixels, respectively.  note that in this case,
@@ -272,6 +287,10 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   So it is important to test your particular setup!
 %
 % history:
+% 2014/10/21 - implement colors for the {A C X Y Z} case of <fixationorder>
+% 2014/10/15 - implement the H argument for <fixationorder>
+% 2014/10/08 - implement the {A C X Y Z} case for <fixationorder>.  implement special B case for <trialtask>.
+%              institute capital letters in addition to the digits for the fixation digits stuff.
 % 2014/02/17 - allow <maskimages> to be uint8
 % 2013/12/20 - allow framecolor to be alpha values
 % 2013/08/20 - implement negative case for B of <trialtask>,
@@ -305,7 +324,6 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 % - test: VBLSyncTest
 % - useful for reference: [times,badout,misses]=CheckFrameTiming(100,1,10,5,0,0,0);
 % - speedup: [resident [texidresident]] = Screen('PreloadTextures', windowPtr [, texids]);
-% - run only in mirror mdoe? [probably not]
 % - async flips was causing problems
 % - using "don't clear" in flip was causing problems.
 
@@ -391,13 +409,18 @@ if ~isempty(framefiles)
     framefiles = {framefiles []};
   end
 end
-if iscell(fixationorder) && (length(fixationorder) == 5)
+focase3 = iscell(fixationorder) & length(fixationorder{2})==2;
+focase4 = iscell(fixationorder) & length(fixationorder{2})==1;
+if focase3 && (length(fixationorder) == 5)
   fixationorder{6} = [];
 end
-if iscell(fixationorder) && isempty(fixationorder{6})
+if focase3 && isempty(fixationorder{6})
   fixationorder{6} = 0;
 end
-if iscell(fixationorder) && ~isempty(specialcon)
+if (focase3 && length(fixationorder) < 8) || (focase3 && isempty(fixationorder{8}))
+  fixationorder{8} = [0 0];
+end
+if focase3 && ~isempty(specialcon)
   if fixationorder{6}==0
     specialcon{3} = repmat([255 255 255],[fixationorder{5} 1]);
   else
@@ -519,9 +542,21 @@ end
 % prepare movierect and fixationrect
 movierect = CenterRect([0 0 round(scfactor*d2images) round(scfactor*d1images)],rect) + [offset(1) offset(2) offset(1) offset(2)];
 if size(fixationsize,1) == 1  % dot case
-  fixationrect = CenterRect([0 0 2*fixationsize(1) 2*fixationsize(1)],rect) + [offset(1) offset(2) offset(1) offset(2)];  % allow doubling of fixationsize for room for anti-aliasing
+  % easy case
+  if ~focase4
+    fixationrect = CenterRect([0 0 2*fixationsize(1) 2*fixationsize(1)],rect) + [offset(1) offset(2) offset(1) offset(2)] + repmat(fixationorder{8},[1 2]);  % allow doubling of fixationsize for room for anti-aliasing
+  % special case of multiple digits
+  else
+    fixationrect = {};
+    for p=1:length(fixationorder{3})
+      fixationrect{p} = CenterRect([0 0 2*fixationsize(1) 2*fixationsize(1)],rect) + [offset(1) offset(2) offset(1) offset(2)] + repmat(fixationorder{3}{p},[1 2]);
+    end
+  end
 else  % image case
   fixationrect = CenterRect([0 0 size(fixationsize,2) size(fixationsize,1)],rect) + [offset(1) offset(2) offset(1) offset(2)];
+end
+if ~iscell(fixationrect)
+  fixationrect = {fixationrect};
 end
 if ~isempty(specialoverlay)
   overlayrect = CenterRect([0 0 size(specialoverlay,2) size(specialoverlay,1)],rect) + [offset(1) offset(2) offset(1) offset(2)];
@@ -562,7 +597,7 @@ else
 
   % prepare digits as 2*fixationsize x 2*fixationsize x 3 x N; uint8 format
   digits = drawtexts(2*fixationsize(1),0,0,'Helvetica',fixationorder{1}, ...
-                     [1 1 1],[0 0 0],mat2cell('0':'9',1,ones(1,10)));
+                     [1 1 1],[0 0 0],mat2cell(['0':'9' 'A':'Z'],1,ones(1,10+26)));
   digits = round(normalizerange(digits,0,1));  % binarize so that values are either 0 or 1
   digsize = sizefull(digits,3);
   digits = repmat(vflatten(digits),[1 3]);  % T x 3
@@ -582,8 +617,8 @@ else
     % finally, add pure gray frame
   fixationimage(:,:,:,end+1) = repmat(reshape(grayval0,[1 1 3]),[size(fixationimage,1) size(fixationimage,2)]);
   
-  % prepare alpha as 2*fixationsize x 2*fixationsize x 21; uint8 [0,255] alpha values
-  if fixationorder{3}
+  % prepare alpha as 2*fixationsize x 2*fixationsize x N; uint8 [0,255] alpha values
+  if (focase3 & fixationorder{3}) | (focase4 & fixationorder{2})
     % the digits themselves are the 255 alpha values
     fixationalpha = uint8(reshape(255*double(~whzero),digsize(1),digsize(2),digsize(3)));
     fixationalpha = cat(3,fixationalpha,fixationalpha);
@@ -591,7 +626,7 @@ else
   else
     % (255 in circle, 0 outside). gradual ramp.
     fixationalpha = repmat(uint8(255*makecircleimage(2*fixationsize(1), ...
-                    fixationsize(1)/2-fixationsize(2),[],[],fixationsize(1)/2)),[1 1 21]);
+                    fixationsize(1)/2-fixationsize(2),[],[],fixationsize(1)/2)),[1 1 (10+26)*2+1]);
   end
   
 end
@@ -677,10 +712,10 @@ if ~isempty(specialcon)
 end
 
 % deal with figuring out digit sequence for special fixation task
-if iscell(fixationorder)
+if focase3
 
   % if we have an existing record, use it
-  if length(fixationorder) >= 7
+  if length(fixationorder) >= 7 && ~isempty(fixationorder{7})
   
     digitrecord = fixationorder{7}{1};
     digitframe = fixationorder{7}{2};
@@ -692,8 +727,8 @@ if iscell(fixationorder)
       % this will record onsets (for user consumption)
     digitrecord = NaN*zeros(1,ceil(size(frameorder,2)/sum(fixationorder{2})) * sum(fixationorder{2}));
       % this will tell us what to put on each frame [entries 1-10 map to '0':'9' white.
-      %                                              entries 11-20 map to '0':'9' black.
-      %                                              entry 21 maps to gray.]
+      %                                              entries 37-46 map to '0':'9' black.
+      %                                              entry 73 maps to gray.]
     digitframe = digitrecord;
     digitpolarity = digitrecord;  % 0 means white.  1 means black.
     lastdigit = NaN;
@@ -730,7 +765,7 @@ if iscell(fixationorder)
         end
       end
       digitrecord(p) = digit;
-      digitframe(p-1+(1:sum(fixationorder{2}))) = [repmat(digit+1,[1 fixationorder{2}(1)]) repmat(21,[1 fixationorder{2}(2)])];
+      digitframe(p-1+(1:sum(fixationorder{2}))) = [repmat(digit+1,[1 fixationorder{2}(1)]) repmat((10+26)*2+1,[1 fixationorder{2}(2)])];
       digitpolarity(p-1+(1:sum(fixationorder{2}))) = mod(cnt,2);
       lastdigit = digit;
       p = p + sum(fixationorder{2});
@@ -759,8 +794,23 @@ if ~isempty(trialtask)
     numframes = size(trialtask{1},2);
     
     % easy case (consecutive is okay)
-    if trialtask{2} > 0
-      dotrials = find(rand(1,numtrials) <= trialtask{2});  % indices of trials to show a dot on
+    if iscell(trialtask{2}) || trialtask{2} > 0
+
+      if iscell(trialtask{2})
+        dogroups = find(rand(1,length(trialtask{2}{2})) <= trialtask{2}{1});  % indices of groups to show dot for
+        dotrials = catcell(2,trialtask{2}{2}(dogroups));  % indices of trials to show dot on
+          % figure out how these trials are grouped (we will use random-seed strategy)
+        cnt = 1;
+        dogroupings = [];
+        for p=1:length(dogroups)
+          dogroupings = [dogroupings cnt*ones(1,length(trialtask{2}{2}{dogroups(p)}))];
+          cnt = cnt + 1;
+        end
+        assert(length(dotrials)==length(dogroupings));
+      else
+        dotrials = find(rand(1,numtrials) <= trialtask{2});  % indices of trials to show a dot on
+        dogroupings = 1:length(dotrials);
+      end
 
     % hard case (consecutive is not okay)
     else
@@ -778,10 +828,21 @@ if ~isempty(trialtask)
         end
       end
       dotrials = find(dotrials);
+      dogroupings = 1:length(dotrials);
     end
     
+    % have a random starting point at least
+    clock0 = sum(100*clock);
+    
+    % compute
     trialoffsets = NaN*zeros(2,numframes);  % compute x- and y-offsets for each frame
     for pp=1:length(dotrials)
+      
+      % this ensures that trials that are grouped together will experience the same
+      % dot parameters.  thus, it is here that physicality of dots is enforced 
+      % (all four tasks see the same dots).
+      setrandstate({clock0+999*dogroupings(pp)});
+      
       dotframes = find(trialtask{1}(dotrials(pp),:));  % indices of frames to show the dot on
         % choose a random duration within the trial by ignoring a random number of frames at the beginning
       if trialtask{8} > 0
@@ -795,6 +856,10 @@ if ~isempty(trialtask)
       whichloc = ceil(rand*size(locs,2));  % pick one location. this is the index.
       trialoffsets(:,dotframes) = repmat(locs(:,whichloc),[1 length(dotframes)]);
     end
+    
+    % restore randomness
+    setrandstate;
+    
   end
 
 end
@@ -808,8 +873,13 @@ if ~isempty(specialoverlay)
   Screen('DrawTexture',win,texture,[],overlayrect,[],0);
   Screen('Close',texture);
 end
-if iscell(fixationorder)
+if focase3
   texture = Screen('MakeTexture',win,cat(3,fixationimage(:,:,:,1),fixationalpha(:,:,1)));
+elseif focase4
+  texture = {};
+  for p=1:length(fixationrect)
+    texture{p} = Screen('MakeTexture',win,cat(3,fixationimage(:,:,:,1),fixationalpha(:,:,1)));
+  end
 else
   if fixationcase==0
     texture = Screen('MakeTexture',win,cat(3,fixationimage,uint8(fixationorder(1)*fixationalpha)));
@@ -817,8 +887,13 @@ else
     texture = Screen('MakeTexture',win,cat(3,fixationimage(:,:,:,-fixationorder(1)),uint8(fixationorder(end)*fixationalpha)));
   end
 end
-Screen('DrawTexture',win,texture,[],fixationrect,[],0);
-Screen('Close',texture);
+if ~iscell(texture)
+  texture = {texture};
+end
+for p=1:length(texture)
+  Screen('DrawTexture',win,texture{p},[],fixationrect{p},[],0);
+  Screen('Close',texture{p});
+end
 if ~isempty(specialcon)
   Screen('LoadNormalizedGammaTable',win,specialcluts(:,:,allcons==100),1);  % use loadOnNextFlip!
   lastsc = 100;
@@ -951,17 +1026,29 @@ for frame=1:frameskip:size(frameorder,2)+1
   end
   
   % draw the fixation
-  if iscell(fixationorder)
+  if focase3
     if fixationorder{6}==1
-      if digitframe(frame) == 21
-        whtodo = 21;
+      if digitframe(frame) == 73
+        whtodo = 73;
       else
-        whtodo = digitframe(frame) + 10*digitpolarity(frame);
+        whtodo = digitframe(frame) + (10+26)*digitpolarity(frame);
       end
     else
       whtodo = digitframe(frame);
     end
     texture = Screen('MakeTexture',win,cat(3,fixationimage(:,:,:,whtodo),fixationalpha(:,:,whtodo)));
+  elseif focase4
+    texture = {};
+    for p=1:length(fixationrect)
+      dg0 = fixationorder{4}(p,frame);
+      cl0 = fixationorder{5}(p,frame);
+      if isnan(dg0)
+        whtodo = 73;
+      else
+        whtodo = dg0 + (10+26)*(cl0==0);
+      end
+      texture{p} = Screen('MakeTexture',win,cat(3,fixthecolor(fixationimage(:,:,:,whtodo),cl0),fixationalpha(:,:,whtodo)));
+    end
   else
     if fixationcase==0
       texture = Screen('MakeTexture',win,cat(3,fixationimage,uint8(fixationorder(1+frame0)*fixationalpha)));
@@ -969,8 +1056,13 @@ for frame=1:frameskip:size(frameorder,2)+1
       texture = Screen('MakeTexture',win,cat(3,fixationimage(:,:,:,-fixationorder(1+frame0)),uint8(fixationorder(end)*fixationalpha)));
     end
   end
-  Screen('DrawTexture',win,texture,[],fixationrect,0,0);
-  Screen('Close',texture);
+  if ~iscell(texture)
+    texture = {texture};
+  end
+  for p=1:length(texture)
+    Screen('DrawTexture',win,texture{p},[],fixationrect{p},0,0);
+    Screen('Close',texture{p});
+  end
   
   % draw the trial task dot
   if ~isempty(trialtask)
@@ -1117,8 +1209,13 @@ if ~isempty(specialoverlay)
   Screen('DrawTexture',win,texture,[],overlayrect,[],0);
   Screen('Close',texture);
 end
-if iscell(fixationorder)
+if focase3
   texture = Screen('MakeTexture',win,cat(3,fixationimage(:,:,:,1),fixationalpha(:,:,1)));
+elseif focase4
+  texture = {};
+  for p=1:length(fixationrect)
+    texture{p} = Screen('MakeTexture',win,cat(3,fixationimage(:,:,:,1),fixationalpha(:,:,1)));
+  end
 else
   if fixationcase==0
     texture = Screen('MakeTexture',win,cat(3,fixationimage,uint8(fixationorder(end)*fixationalpha)));
@@ -1126,8 +1223,13 @@ else
     texture = Screen('MakeTexture',win,cat(3,fixationimage(:,:,:,-fixationorder(end-1)),uint8(fixationorder(end)*fixationalpha)));
   end
 end
-Screen('DrawTexture',win,texture,[],fixationrect,[],0);
-Screen('Close',texture);
+if ~iscell(texture)
+  texture = {texture};
+end
+for p=1:length(texture)
+  Screen('DrawTexture',win,texture{p},[],fixationrect{p},[],0);
+  Screen('Close',texture{p});
+end
 if ~isempty(specialcon)
   Screen('LoadNormalizedGammaTable',win,specialcluts(:,:,allcons==100),1);  % use loadOnNextFlip!
 end
@@ -1162,12 +1264,26 @@ if wantcheck
   ptviewmoviecheck(timeframes,timekeys);
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+function im = fixthecolor(im,clr)
 
-
-
-
-
+switch clr
+case 0  % black
+case 1  % white
+case 2  % red
+  im(:,:,2:3) = 0;
+case 3  % green
+  im(:,:,[1 3]) = 0;
+case 4  % blue
+  im(:,:,1:2) = 0;
+case 5  % yellow
+  im(:,:,3) = 0;
+case 6  % magenta
+  im(:,:,2) = 0;
+case 7  % cyan
+  im(:,:,1) = 0;
+end
 
 
 
