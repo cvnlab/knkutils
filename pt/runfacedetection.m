@@ -10,10 +10,14 @@
 % #9 is SPOKES:          [8 5 8], prime then face (100% contrast); judge gender; measure accuracy and RT; 50% size
 %                        center and 8 angs * 5 rings = 41 conditions
 %                        eccentricities: 0 1 3 5.5 8.5 12
-% #10 is SPOKESMED:      2/3*50% size. just horizontal meridian.
-% #11 is SPOKESSM:       1/3*50% size. just horizontal meridian.
+% #10 is SPOKESMED:      same as #9 except 2/3*50% size and just horizontal meridian
+% #11 is SPOKESSM:       same as #9 except 1/3*50% size and just horizontal meridian.
+% #12 is SPOKESDET:      same as #9 except detect face.  alternative is phase-scrambled face (0% coherence) matched for lum and con.
+% #13 is SPOKESSZ:       same as #9 except only at center and various sizes
 
 % history:
+% - 2014/11/28 - finalized #12. version 1.2.
+% - 2014/11/27 - implement #12, #13
 % - 2014/11/26 - version 1.1.
 % - 2014/11/26 - add eyelink and general improvements
 % - 2014/11/23 - implement expt #10, #11
@@ -26,7 +30,7 @@
 % - 2014/11/18 - now, we detect responses during the actual movie
 % - 2014/11/18 - add stimrecord
 
-% internal notes:
+% internal notes: [maybe re-do all here]
 % - make stimulus movie? [and movie notes?]
 % - add to sketch?
 % - any thumbnails or sample images? [maybe derive from movie]
@@ -42,7 +46,10 @@ wanteyetrack = input('Are you recording eye-tracking data (0=no, 1=yes)? ');
 eyelinkfile = 'run01.edf';  % dummy file name that we will change after we receive the file
 
 % which experiment to run
-expttype = input('Which experiment to run (5=SIMPLEGENDER, 7=SIMPLEGENDERALT, 8=GENDERCON, 9=SPOKES, 10=SPOKESMED, 11=SPOKESSM)? ');
+expttype = input(['Which experiment to run \n' ...
+                  '(5=SIMPLEGENDER, 7=SIMPLEGENDERALT, 8=GENDERCON, \n' ...
+                  ' 9=SPOKES, 10=SPOKESMED, 11=SPOKESSM, \n' ...
+                  '12=SPOKESDET, 13=SPOKESSZ)? ']);
 
 % is the screen big enough?
 tfov = 2*atan((heightofscreen/2) / viewingdistance)/pi*180;  % total size of display in vertical direction (deg)
@@ -50,7 +57,7 @@ fprintf('Your vertical screen size is %.2f deg.\n',tfov);
 switch expttype
 case {5 7 8}
   needfov = 21.5;
-case {9 10 11}
+case {9 10 11 12 13}
   needfov = 27;
 end
 if tfov < needfov
@@ -92,7 +99,7 @@ breaktime = 60;    % how long in seconds until a break
 
 % more constants
 switch expttype
-case {5 7 8 9 10 11}
+case {5 7 8 9 10 11 12 13}
   frameduration = 6;
 % case 6
 %   frameduration = 6;
@@ -105,25 +112,6 @@ totalset = 1:92;   % use all the faces
 vstep = 0.671875;  % in deg (vertical)
 hstep = 0.609375;  % in deg (horizontal)
 origsz = 12.5;  % original vertical size of stimuli (in deg)
-
-% scale factor for stimuli
-switch expttype
-case {9}
-  stimfac = 0.5;
-case {10}
-  stimfac = 0.5*2/3;
-case {11}
-  stimfac = 0.5*1/3;
-case {5 7 8}
-  stimfac = 1;
-end
-
-% calc resolution of faces
-newres = round(origsz*stimfac*dfac/2)*2;  % new pixel resolution for the stimuli (ensure even)
-fprintf('We will be resizing the stimuli (originally 800 x 800) to %d x %d.\n',newres,newres);
-if newres < 80
-  error('The desired pixel resolution is too low');
-end
 
 % generate locations to test
 alllocs = {};
@@ -152,7 +140,7 @@ case {8}
       alllocs{end+1} = [vidx(q)*vstep hidx(p)*hstep];
     end
   end
-case {9}
+case {9 12}
   eccs = [0 1 3 5.5 8.5 12];
   angs = linspacecircular(0,2*pi,8);  % 8 angles
   for p=1:length(eccs)
@@ -163,6 +151,8 @@ case {9}
       alllocs{end+1} = [sin(angs(q))*eccs(p) cos(angs(q))*eccs(p)];
     end
   end
+case {13}
+  alllocs{end+1} = [0 0];
 case {10 11}
   eccs = [0 1 3 5.5 8.5 12];
   angs = linspacecircular(0,2*pi,2);
@@ -190,6 +180,7 @@ case 5
   pcon = 100;     % contrast multiplier for noise
   fcon = 100;     % contrast multiplier for face
   testtime = 14;  % frame at which test stimulus appears
+  fsiz = 1;
 % case 6
 %   timing = [8 5 1 5 1];  % 200 ms delay, 1000 ms face
 %   pcon = 100;      % contrast multiplier for noise
@@ -200,16 +191,54 @@ case 7
   pcon = 100;     % contrast multiplier for noise
   fcon = 10;     % contrast multiplier for face
   testtime = 14;  % frame at which test stimulus appears
+  fsiz = 1;
 case 8
   timing = [8 5 8];  % 800 ms primer, 500 ms gap, 800 ms face
   pcon = 100;     % contrast multiplier for noise
   fcon = [4 6 10 20 40 100];
   testtime = 14;  % frame at which test stimulus appears
-case {9 10 11}
+  fsiz = 1;
+case 9
   timing = [8 5 8];  % 800 ms primer, 500 ms gap, 800 ms face
   pcon = 100;     % contrast multiplier for noise
   fcon = 100;
   testtime = 14;  % frame at which test stimulus appears
+  fsiz = 0.5;
+case 10
+  timing = [8 5 8];  % 800 ms primer, 500 ms gap, 800 ms face
+  pcon = 100;     % contrast multiplier for noise
+  fcon = 100;
+  testtime = 14;  % frame at which test stimulus appears
+  fsiz = 0.5*2/3;
+case 11
+  timing = [8 5 8];  % 800 ms primer, 500 ms gap, 800 ms face
+  pcon = 100;     % contrast multiplier for noise
+  fcon = 100;
+  testtime = 14;  % frame at which test stimulus appears
+  fsiz = 0.5*1/3;
+case 12
+  timing = [8 5 8];  % 800 ms primer, 500 ms gap, 800 ms face
+  pcon = 100;     % contrast multiplier for noise
+  fcon = 100;     % both the face and the scrambled face are at this contrast
+  testtime = 14;  % frame at which test stimulus appears
+  fsiz = 0.5;
+  validprop = 500/800;  % valid proportion of original stimuli to use in phase-scrambling
+case 13
+  timing = [8 5 8];  % 800 ms primer, 500 ms gap, 800 ms face
+  pcon = 100;     % contrast multiplier for noise
+  fcon = 100;
+  testtime = 14;  % frame at which test stimulus appears
+  fsiz = [0.5*[1/3 2/3 1] 1:.5:5];
+end
+
+% calc resolution of faces
+newres = [];
+for p=1:length(fsiz)
+  newres(p) = round(origsz*fsiz(p)*dfac/2)*2;  % new pixel resolution for the stimuli (ensure even)
+  fprintf('We will be resizing the stimuli (originally 800 x 800) to %d x %d.\n',newres(p),newres(p));
+  if newres(p) < 80
+    error('The desired pixel resolution is too low');
+  end
 end
 
 % set random number seed
@@ -220,7 +249,7 @@ outfile = sprintf('expt%02d_%s_%s.mat',expttype,subjnum,dataset);  % output .mat
 if wanteyetrack
   eyelinkfilereal = sprintf('%s_expt%02d_%s_%s.edf',gettimestring,expttype,subjnum,dataset);
 end
-wantquest = ~ismember(expttype,[5 7 8 9 10 11]);  % do we want to use QUEST?
+wantquest = ~ismember(expttype,[5 7 8 9 10 11 12 13]);  % do we want to use QUEST?
 
 % try to find stimuli
 stimfile = fullfile(stimulusdir,'workspace_categoryC9.mat');
@@ -254,15 +283,15 @@ else
   save(outfile);
 
   % init
-  convals = cell(1,length(alllocs)*length(fcon));
-  accvals = cell(1,length(alllocs)*length(fcon));
-  rtvals  = cell(1,length(alllocs)*length(fcon));
+  convals = cell(1,length(alllocs)*length(fcon)*length(fsiz));
+  accvals = cell(1,length(alllocs)*length(fcon)*length(fsiz));
+  rtvals  = cell(1,length(alllocs)*length(fcon)*length(fsiz));
   stimrecord = [];
 
   % init more
   if wantquest
     clear allqs;
-    for zz=1:length(alllocs)*length(fcon)
+    for zz=1:length(alllocs)*length(fcon)*length(fsiz)
       allqs(zz) = QuestCreate(tGuessFun(),tGuessSd,pThreshold,beta,delta,gamma);
         % This adds a few ms per call to QuestUpdate, but otherwise the pdf will underflow after about 1000 trials.
       allqs(zz).normalizePdf = 1;
@@ -303,16 +332,19 @@ else
   %%facemask = a1.conimages{4*9+5};  % the middle one
   clear a1;
 
-  % resize images
-  allfaces = processmulti(@imresize,allfaces,[newres newres]);
-
   % define face mask (ellipsoid)
-  facemask = makecircleimage(newres,newres*.25,[],[],[],[],[],[.7 .825]);
-  
-  % high-pass filter images
-  if ismember(expttype,[1 3])
-    allfaces = imagefilter(allfaces,constructbutterfilter(newres,-20,5));
+  facemask = {};
+  for p=1:length(newres)
+    facemask{p} = makecircleimage(newres(p),newres(p)*.25,[],[],[],[],[],[.7 .825]);
   end
+
+% % BROKEN BECAUSE WE DO THINGS ON THE FLY  
+%   % high-pass filter images
+%   if ismember(expttype,[1 3])
+%     for p=1:length(allfacesS)
+%       allfacesS{p} = imagefilter(allfacesS{p},constructbutterfilter(newres(p),-20,5));
+%     end
+%   end
 
     % mask0 = makecircleimage(newres,newres*.25,[],[],[],[],[],[.7 .825]);
     % tt=[10 15 20 25 30 40 50 70];
@@ -325,32 +357,40 @@ else
     % end
     % % 20 or 25.
 
-  % mask images
-  switch expttype
-  case {1 3}
-    allfaces = bsxfun(@times,allfaces,facemask);
-  case {5 7 8 9 10 11}  % 2 6
-    allfaces = bsxfun(@plus,bsxfun(@times,allfaces,facemask),grayval*(1-facemask));
-%     allfaces = bsxfun(@plus,bsxfun(@times,allfaces,facemask),0*(1-facemask));
-  end
+% % BROKEN BECAUSE WE DO THINGS ON THE FLY  
+%   % mask images
+%   switch expttype
+%   case {1 3}
+%     for p=1:length(allfacesS)
+%       allfacesS{p} = bsxfun(@times,allfacesS{p},facemask{p});
+%     end
+%   case {5 7 8 9 10 11 12 13}  % 2 6
+%     for p=1:length(allfacesS)
+%       allfacesS{p} = bsxfun(@plus,bsxfun(@times,allfacesS{p},facemask{p}),grayval*(1-facemask{p}));
+%     end
+% %     allfaces = bsxfun(@plus,bsxfun(@times,allfaces,facemask),0*(1-facemask));
+%   end
 
-  % z-score images and scale
-  if ismember(expttype,[1 3])
-
-    for p=1:size(allfaces,3)
-      im0 = allfaces(:,:,p);
-      im0(logical(facemask)) = calczscore(im0(logical(facemask)));
-      allfaces(:,:,p) = im0;
-    end
-    % now, the range is something like -10 to 10
-
-    % scale images
-    allfaces = allfaces/10;  % now -1 to 1 (but still some values outside this range)
-
-    % check contrast?
-    % median(sqrt(mean(squish(allfaces,2).^2,1)))
-
-  end
+% % BROKEN BECAUSE WE DO THINGS ON THE FLY  
+%   % z-score images and scale
+%   if ismember(expttype,[1 3])
+% 
+%     for q=1:length(allfacesS)
+%       for p=1:size(allfacesS{q},3)
+%         im0 = allfaces{q}(:,:,p);
+%         im0(logical(facemask{q})) = calczscore(im0(logical(facemask{q})));
+%         allfacesS{q}(:,:,p) = im0;
+%       end
+%       % now, the range is something like -10 to 10
+% 
+%       % scale images
+%       allfacesS{q} = allfacesS{q}/10;  % now -1 to 1 (but still some values outside this range)
+% 
+%       % check contrast?
+%       % median(sqrt(mean(squish(allfaces,2).^2,1)))
+%     end
+% 
+%   end
 
 end
 
@@ -446,7 +486,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% main section
 
 % define
-alltodo{end+1} = permutedim(1:(length(alllocs)*length(fcon)*trialsDesired));  % trials to run
+alltodo{end+1} = permutedim(1:(length(alllocs)*length(fcon)*length(fsiz)*trialsDesired));  % trials to run
 lastbreak = GetSecs;  % time of last break
 
 % do it
@@ -456,6 +496,7 @@ for pp=1:length(alltodo{end})
   % calc
   ppw = mod2(alltodo{end}(pp),length(alllocs));  % what location are we doing?
   fcon0 = mod2(ceil(alltodo{end}(pp)/length(alllocs)),length(fcon));  % what contrast level index?
+  ss = mod2(ceil(alltodo{end}(pp)/(length(alllocs)*length(fcon))),length(fsiz));  % what face size index?
 
   % get the contrast value to test at
   if wantquest
@@ -463,18 +504,34 @@ for pp=1:length(alltodo{end})
     conval = QuestQuantile(allqs(ppw));  % Recommended by Pelli (1987), and still our favorite.
     conval = min(0,conval);  % do not let contrast go larger than 10^0=1
   else
+%     if expttype==12
+%       conval = log10();
+%       %log10(0.1);%log10(0.8);  %log10(0.1);  %log10(.5);
+% %       if rand > .5
+% %         answer = 1;
+% %         conval = log10(fcon(fcon0)/100);
+% %       else
+% %         answer = 2;
+% %         conval = log10(fcon2(fcon0)/100);
+% %       end
+%     else
     conval = log10(fcon(fcon0)/100);
   end
 	
 	%%%%% generate stimuli and prepare movie
 
   switch expttype
-  case {5 7 8 9 10 11}
+  case {5 7 8 9 10 11 12 13}
 
     % generate noise
-    noiseframes = zeros(newres,newres,1);
+    noiseframes = zeros(newres(ss),newres(ss),1);
     for zz=1:1
-      temp = calczscore(generatepinknoise(newres,1,1,1));  % now roughly in -4 to 4
+      if newres(ss) > 800   % to speed things up
+        temp = calczscore(generatepinknoise(800,1,1,1));  % now roughly in -4 to 4
+        temp = imresize(temp,[newres(ss) newres(ss)]);
+      else
+        temp = calczscore(generatepinknoise(newres(ss),1,1,1));  % now roughly in -4 to 4
+      end
       noiseframes(:,:,zz) = 127 + temp * (1/4 * 127 * pcon/100);
     end
 
@@ -483,16 +540,41 @@ for pp=1:length(alltodo{end})
   
     % where are we putting the stimulus?
     csarg = [-round(alllocs{ppw}(1) * dfac) round(alllocs{ppw}(2) * dfac)];
-    pos0 = [res/2+1 - newres/2 + csarg(1)  res/2+1 - newres/2 + csarg(2)];
+    pos0 = [res/2+1 - newres(ss)/2 + csarg(1)  res/2+1 - newres(ss)/2 + csarg(2)];
     
-    % construct face
-    face0 = placematrix(grayval*ones(res,res),allfaces(:,:,faceix),pos0);
+    % resize face
+    face0 = imresize(allfaces(:,:,faceix),[newres(ss) newres(ss)]);
+    
+    % handle special phase-scrambling case
+    if expttype==12
+      centralcrop = round(validprop * newres(ss) / 2)*2;  % how big is the valid region?
+      face0 = placematrix(zeros(centralcrop,centralcrop),face0,[]);  % crop the face stimulus
+      face0scr1 = phasescrambleimage(face0,0);     % phase-scramble
+%       face0scr2 = phasescrambleimage(face0,100);   % phase-scramble
+      mask0 = logical(placematrix(zeros(centralcrop,centralcrop),facemask{ss},[]));  % crop the mask
+      [mean0,std0] = meanandse(face0(mask0),[],1);  % what is the mean and std of pixels of original face (within mask)?
+      face0scr1(mask0) = calczscore(face0scr1(mask0)) * std0 + mean0;  % adjust pixels of scr face (within mask) to match
+%       face0scr2(mask0) = calczscore(face0scr2(mask0)) * std0 + mean0;  % adjust pixels of scr face (within mask) to match
+      if rand > .5
+        face0 = face0scr1;
+        answer = 1;
+      else
+        answer = 2;
+      end
+      face0 = placematrix(zeros(newres(ss),newres(ss)),face0,[]);  % undo the crop
+    end
+    
+    % mask face
+    face0 = face0 .* facemask{ss} + grayval * (1-facemask{ss});
+    
+    % place on gray background
+    face0 = placematrix(grayval*ones(res,res),face0,pos0);
     
     % change contrast of face
     face0 = (10^conval) * (face0-grayval) + grayval;
-
+    
     % construct noise
-    noise0 = placematrix(grayval*ones(res,res),noiseframes .* facemask + grayval*(1-facemask),pos0);
+    noise0 = placematrix(grayval*ones(res,res),noiseframes .* facemask{ss} + grayval*(1-facemask{ss}),pos0);
 
     % init movie
     mov = uint8([]);
@@ -510,7 +592,7 @@ for pp=1:length(alltodo{end})
     mov = cat(3,mov,grayval*ones(res,res,1));
 
     % record
-    stimrecord0 = [pp alltodo{end}(pp) faceix];
+    stimrecord0 = [pp alltodo{end}(pp) faceix ppw fcon0 ss conval];
 
   case 6
 
@@ -569,12 +651,17 @@ for pp=1:length(alltodo{end})
   switch expttype
   case {1 3}
     answer = whtarget;
-  case {2 5 7 8 9 10 11}
+  case {2 5 7 8 9 10 11 13}
     answer = genders(subscript(sort(totalset),{faceix}));
   case {6}
 %     answer = 2-(subscript(sort(totalset),{faceix})== ...
 %              subscript(sort(totalset),{faceixB}));
+  case {12}
+    % answer already defined above
   end
+  
+  % record it
+  stimrecord0 = [stimrecord0 answer];
 
 	%%%%% show the movie
 
@@ -716,7 +803,7 @@ for pp=1:length(alltodo{end})
   if alreadypressed
 
     % record
-    ix0 = (fcon0-1)*length(alllocs)+ppw;
+    ix0 = (ss-1)*(length(fcon)*length(alllocs)) + (fcon0-1)*length(alllocs) + ppw;
     convals{ix0} = [convals{ix0} conval];
     accvals{ix0} = [accvals{ix0} cor];
     rtvals{ix0} =  [rtvals{ix0} buttontime-timeframes(testtime)];
@@ -725,7 +812,7 @@ for pp=1:length(alltodo{end})
 
   % record some statistics on the movie showing
   dur = (timeframes(end)-timeframes(1)) * (length(timeframes)/(length(timeframes)-1));  % projected total movie duration
-  stimrecord0(end+1) = dur;
+  stimrecord0 = [stimrecord0 dur];
 
 % THIS IS NO LONGER NECESSARY SINCE WE INCLUDE A BLANK DUMMY FRAME AT THE END OF THE MOVIE
 %   % draw the background and fixation
@@ -772,7 +859,7 @@ for pp=1:length(alltodo{end})
           end
   
           % record
-          ix0 = (fcon0-1)*length(alllocs)+ppw;
+          ix0 = (ss-1)*(length(fcon)*length(alllocs)) + (fcon0-1)*length(alllocs) + ppw;
           convals{ix0} = [convals{ix0} conval];
           accvals{ix0} = [accvals{ix0} cor];
           rtvals{ix0} =  [rtvals{ix0} secs-timeframes(testtime)];
@@ -1048,3 +1135,9 @@ ptoff(oldclut);
 %     % put up second frame
 %     mov = cat(3,mov,repmat(noiseframes(:,:,2),[1 1 frametime]));
 % 
+
+%     % check pixel range
+%     if expttype==12
+%       badout = sum(face0(:)<0 | face0(:)>255);
+%       fprintf('answer = %d, badout = %.1f%%\n',answer,badout/sum(mask0(:)) * 100);
+%     end
