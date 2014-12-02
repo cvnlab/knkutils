@@ -14,8 +14,10 @@
 % #11 is SPOKESSM:       same as #9 except 1/3*50% size and just horizontal meridian.
 % #12 is SPOKESDET:      same as #9 except detect face.  alternative is phase-scrambled face (0% coherence) matched for lum and con.
 % #13 is SPOKESSZ:       same as #9 except only at center and various sizes
+% #14 is SPOKESWORD:     same as #9 but with word and lexical decision task
 
 % history:
+% - 2014/11/30 - add expt #14
 % - 2014/11/28 - finalized #12. version 1.2.
 % - 2014/11/27 - implement #12, #13
 % - 2014/11/26 - version 1.1.
@@ -49,7 +51,7 @@ eyelinkfile = 'run01.edf';  % dummy file name that we will change after we recei
 expttype = input(['Which experiment to run \n' ...
                   '(5=SIMPLEGENDER, 7=SIMPLEGENDERALT, 8=GENDERCON, \n' ...
                   ' 9=SPOKES, 10=SPOKESMED, 11=SPOKESSM, \n' ...
-                  '12=SPOKESDET, 13=SPOKESSZ)? ']);
+                  '12=SPOKESDET, 13=SPOKESSZ, 14=SPOKESWORD)? ']);
 
 % is the screen big enough?
 tfov = 2*atan((heightofscreen/2) / viewingdistance)/pi*180;  % total size of display in vertical direction (deg)
@@ -57,7 +59,7 @@ fprintf('Your vertical screen size is %.2f deg.\n',tfov);
 switch expttype
 case {5 7 8}
   needfov = 21.5;
-case {9 10 11 12 13}
+case {9 10 11 12 13 14}
   needfov = 27;
 end
 if tfov < needfov
@@ -75,7 +77,7 @@ screennum = max(Screen('Screens'));  % we assume we are operating on screen with
 temp = Screen('Resolution',screennum);
 temp = [temp.width temp.height temp.hz temp.pixelSize];
 fprintf('Detected %s as the display setting for screen %d.\n',mat2str(temp),screennum);
-ptonparams = {temp,[],-1};  % resolution, [], gamma setting
+ptonparams = {temp,[],[]};  % resolution, [], gamma setting
 
 % calc some stuff
 res = ptonparams{1}(2);        % full vertical display resolution in pixels
@@ -99,16 +101,34 @@ breaktime = 60;    % how long in seconds until a break
 
 % more constants
 switch expttype
-case {5 7 8 9 10 11 12 13}
+case {5 7 8 9 10 11 12 13 14}
   frameduration = 6;
 % case 6
 %   frameduration = 6;
 end
 
 % some more, experiment-specific
-genders = [2 1 1 1 1 1 1 1 2 1 1 2 2 2 2 2 2 2 2 1 2 1 1 2 1 1 2 1 2 2 2 2 1 1 1 1 1 2 2 1 1 2 1 1 2 2 1 1 2 2 1 2 1 2 1 1 1 2 1 1 2 2 1 1 2 1 1 2 2 1 1 2 2 2 2 2 2 2 1 1 1 2 2 2 1 2 1 2 2 1 2 1];  % all 92 (1=male, 2=female)
-  % totalset = [24 92 31 8 42 21 91 25 55 85 15 50 51 27 30 39 26 2 88 87 29 68 53 49 72 69 67 22 75 57 44 16 19 36 48 10 78 33 7 35 4 61 46 83 38 70 54 77 74 60 28 3 11 80 64 66 40 43 52 79];  % just hard code it!
-totalset = 1:92;   % use all the faces
+switch expttype
+case {5 7 8 9 10 11 12 13}
+  stimlabels = [2 1 1 1 1 1 1 1 2 1 1 2 2 2 2 2 2 2 2 1 2 1 1 2 1 1 2 1 2 2 2 2 1 1 1 1 1 2 2 1 1 2 1 1 2 2 1 1 2 2 1 2 1 2 1 1 1 2 1 1 2 2 1 1 2 1 1 2 2 1 1 2 2 2 2 2 2 2 1 1 1 2 2 2 1 2 1 2 2 1 2 1];  % all 92 (1=male, 2=female)
+    % totalset = [24 92 31 8 42 21 91 25 55 85 15 50 51 27 30 39 26 2 88 87 29 68 53 49 72 69 67 22 75 57 44 16 19 36 48 10 78 33 7 35 4 61 46 83 38 70 54 77 74 60 28 3 11 80 64 66 40 43 52 79];  % just hard code it!
+  totalset = 1:92;   % use all the faces
+case {14}
+      % REFERENCE:
+      %   verbcheck = loadtext('/research/reading/words/C/3words_verb.txt');
+      %   ttt = cellfun(@str2double,verbcheck)
+      %   mat2str(ttt)  % this is stimlabels
+      %   find(ttt==1)
+      %   mat2str(sort(picksubset(find(ttt==2),46)))  % this is nonverbs (46 only)
+      %   nonverbs = [8 9 10 17 22 26 28 42 43 51 55 58 64 65 66 68 69 71 72 73 76 83 84 86 88 91 93 94 95 99 108 109 112 116 120 121 123 124 125 128 134 137 144 148 149 150];
+      %   mat2str(find(ttt==1))  % this is verbs
+      %   verbs = [1 2 3 5 6 15 16 18 19 23 27 29 33 35 38 41 44 50 53 57 67 70 77 78 81 82 89 97 102 103 105 106 107 110 111 113 115 117 122 127 131 136 138 143 146 147];
+      %   totalset = sort([nonverbs verbs]);  % this is the complete vector of indices to use
+      %   mat2str(totalset)
+  stimlabels = [1 1 1 2 1 1 0 2 2 2 0 0 2 2 1 1 2 1 1 0 0 2 1 0 2 2 1 2 1 0 2 2 1 0 1 2 0 1 0 0 1 2 2 1 0 0 0 2 2 1 2 0 1 2 2 0 1 2 0 0 0 0 2 2 2 2 1 2 2 1 2 2 2 2 0 2 1 1 2 0 1 1 2 2 2 2 0 2 1 0 2 2 2 2 2 0 1 2 2 2 0 1 1 0 1 1 1 2 2 1 1 2 1 0 1 2 1 0 0 2 2 1 2 2 2 0 1 2 2 2 1 0 0 2 0 1 2 1 2 0 0 2 1 2 2 1 1 2 2 2];  % 0=don't use, 1=verb, 2=non-verb
+  stimlabels = (stimlabels==1) + 1;        % now, verbs are button 2 and everything else is button 1
+  totalset = [1 2 3 5 6 8 9 10 15 16 17 18 19 22 23 26 27 28 29 33 35 38 41 42 43 44 50 51 53 55 57 58 64 65 66 67 68 69 70 71 72 73 76 77 78 81 82 83 84 86 88 89 91 93 94 95 97 99 102 103 105 106 107 108 109 110 111 112 113 115 116 117 120 121 122 123 124 125 127 128 131 134 136 137 138 143 144 146 147 148 149 150];
+end
 vstep = 0.671875;  % in deg (vertical)
 hstep = 0.609375;  % in deg (horizontal)
 origsz = 12.5;  % original vertical size of stimuli (in deg)
@@ -140,7 +160,7 @@ case {8}
       alllocs{end+1} = [vidx(q)*vstep hidx(p)*hstep];
     end
   end
-case {9 12}
+case {9 12 14}
   eccs = [0 1 3 5.5 8.5 12];
   angs = linspacecircular(0,2*pi,8);  % 8 angles
   for p=1:length(eccs)
@@ -198,7 +218,7 @@ case 8
   fcon = [4 6 10 20 40 100];
   testtime = 14;  % frame at which test stimulus appears
   fsiz = 1;
-case 9
+case {9 14}
   timing = [8 5 8];  % 800 ms primer, 500 ms gap, 800 ms face
   pcon = 100;     % contrast multiplier for noise
   fcon = 100;
@@ -249,12 +269,17 @@ outfile = sprintf('expt%02d_%s_%s.mat',expttype,subjnum,dataset);  % output .mat
 if wanteyetrack
   eyelinkfilereal = sprintf('%s_expt%02d_%s_%s.edf',gettimestring,expttype,subjnum,dataset);
 end
-wantquest = ~ismember(expttype,[5 7 8 9 10 11 12 13]);  % do we want to use QUEST?
+wantquest = ~ismember(expttype,[5 7 8 9 10 11 12 13 14]);  % do we want to use QUEST?
 
 % try to find stimuli
-stimfile = fullfile(stimulusdir,'workspace_categoryC9.mat');
+if ismember(expttype,14)
+  stimfilename = 'workspace_categoryC9words.mat';
+else
+  stimfilename = 'workspace_categoryC9.mat';
+end
+stimfile = fullfile(stimulusdir,stimfilename);
 if ~exist(stimfile,'file')
-  stimfile = fullfile(altstimulusdir,'workspace_categoryC9.mat');
+  stimfile = fullfile(altstimulusdir,stimfilename);
 end
 if ~exist(stimfile,'file')
   error('Cannot find stimulus .mat file');
@@ -317,7 +342,7 @@ trialsDesired = input('How many trials do you wish to do now? ');
 disp0 = {expttype ptonparams{1} heightofscreen viewingdistance};
 
 % if we have existing stimuli and nothing changed, then we don't have to prepare the stimuli
-if exist('allfaces','var') && isequal(disp0,lastdisp)
+if exist('allstim','var') && isequal(disp0,lastdisp)
 
 else
 
@@ -325,10 +350,10 @@ else
   lastdisp = disp0;
 
   % load images
-  a1 = load(stimfile,'images');  % images is 800 x 800 x 92, uint8
+  a1 = load(stimfile,'images');  % images is 800 x 800 x N, uint8
 
   % extract images
-  allfaces = double(a1.images{1}(:,:,sort(totalset)));
+  allstim = double(a1.images{1}(:,:,sort(totalset)));
   %%facemask = a1.conimages{4*9+5};  % the middle one
   clear a1;
 
@@ -341,15 +366,15 @@ else
 % % BROKEN BECAUSE WE DO THINGS ON THE FLY  
 %   % high-pass filter images
 %   if ismember(expttype,[1 3])
-%     for p=1:length(allfacesS)
-%       allfacesS{p} = imagefilter(allfacesS{p},constructbutterfilter(newres(p),-20,5));
+%     for p=1:length(allstimS)
+%       allstimS{p} = imagefilter(allstimS{p},constructbutterfilter(newres(p),-20,5));
 %     end
 %   end
 
     % mask0 = makecircleimage(newres,newres*.25,[],[],[],[],[],[.7 .825]);
     % tt=[10 15 20 25 30 40 50 70];
     % for z=1:length(tt)
-    %   im0 = imagefilter(mean(allfaces(:,:,randintrange(1,40)),3),constructbutterfilter(newres,-tt(z),5));
+    %   im0 = imagefilter(mean(allstim(:,:,randintrange(1,40)),3),constructbutterfilter(newres,-tt(z),5));
     %   im0 = round(im0.*mask0);
     %   im0(logical(mask0)) = zeromean(im0(logical(mask0)));
     %   imagesc(im0,[-50 50]); axis image;
@@ -361,33 +386,33 @@ else
 %   % mask images
 %   switch expttype
 %   case {1 3}
-%     for p=1:length(allfacesS)
-%       allfacesS{p} = bsxfun(@times,allfacesS{p},facemask{p});
+%     for p=1:length(allstimS)
+%       allstimS{p} = bsxfun(@times,allstimS{p},facemask{p});
 %     end
 %   case {5 7 8 9 10 11 12 13}  % 2 6
-%     for p=1:length(allfacesS)
-%       allfacesS{p} = bsxfun(@plus,bsxfun(@times,allfacesS{p},facemask{p}),grayval*(1-facemask{p}));
+%     for p=1:length(allstimS)
+%       allstimS{p} = bsxfun(@plus,bsxfun(@times,allstimS{p},facemask{p}),grayval*(1-facemask{p}));
 %     end
-% %     allfaces = bsxfun(@plus,bsxfun(@times,allfaces,facemask),0*(1-facemask));
+% %     allstim = bsxfun(@plus,bsxfun(@times,allstim,facemask),0*(1-facemask));
 %   end
 
 % % BROKEN BECAUSE WE DO THINGS ON THE FLY  
 %   % z-score images and scale
 %   if ismember(expttype,[1 3])
 % 
-%     for q=1:length(allfacesS)
-%       for p=1:size(allfacesS{q},3)
-%         im0 = allfaces{q}(:,:,p);
+%     for q=1:length(allstimS)
+%       for p=1:size(allstimS{q},3)
+%         im0 = allstim{q}(:,:,p);
 %         im0(logical(facemask{q})) = calczscore(im0(logical(facemask{q})));
-%         allfacesS{q}(:,:,p) = im0;
+%         allstimS{q}(:,:,p) = im0;
 %       end
 %       % now, the range is something like -10 to 10
 % 
 %       % scale images
-%       allfacesS{q} = allfacesS{q}/10;  % now -1 to 1 (but still some values outside this range)
+%       allstimS{q} = allstimS{q}/10;  % now -1 to 1 (but still some values outside this range)
 % 
 %       % check contrast?
-%       % median(sqrt(mean(squish(allfaces,2).^2,1)))
+%       % median(sqrt(mean(squish(allstim,2).^2,1)))
 %     end
 % 
 %   end
@@ -521,7 +546,7 @@ for pp=1:length(alltodo{end})
 	%%%%% generate stimuli and prepare movie
 
   switch expttype
-  case {5 7 8 9 10 11 12 13}
+  case {5 7 8 9 10 11 12 13 14}
 
     % generate noise
     noiseframes = zeros(newres(ss),newres(ss),1);
@@ -536,14 +561,14 @@ for pp=1:length(alltodo{end})
     end
 
     % pick face
-    faceix = randintrange(1,size(allfaces,3));
+    stimix = randintrange(1,size(allstim,3));
   
     % where are we putting the stimulus?
     csarg = [-round(alllocs{ppw}(1) * dfac) round(alllocs{ppw}(2) * dfac)];
     pos0 = [res/2+1 - newres(ss)/2 + csarg(1)  res/2+1 - newres(ss)/2 + csarg(2)];
     
     % resize face
-    face0 = imresize(allfaces(:,:,faceix),[newres(ss) newres(ss)]);
+    face0 = imresize(allstim(:,:,stimix),[newres(ss) newres(ss)]);
     
     % handle special phase-scrambling case
     if expttype==12
@@ -565,7 +590,9 @@ for pp=1:length(alltodo{end})
     end
     
     % mask face
-    face0 = face0 .* facemask{ss} + grayval * (1-facemask{ss});
+    if ~ismember(expttype,[14])
+      face0 = face0 .* facemask{ss} + grayval * (1-facemask{ss});
+    end
     
     % place on gray background
     face0 = placematrix(grayval*ones(res,res),face0,pos0);
@@ -592,7 +619,7 @@ for pp=1:length(alltodo{end})
     mov = cat(3,mov,grayval*ones(res,res,1));
 
     % record
-    stimrecord0 = [pp alltodo{end}(pp) faceix ppw fcon0 ss conval];
+    stimrecord0 = [pp alltodo{end}(pp) stimix ppw fcon0 ss conval];
 
   case 6
 
@@ -612,12 +639,12 @@ for pp=1:length(alltodo{end})
 %     end
 %     
 %     % pick face
-%     faceix = randintrange(1,size(allfaces,3));
-%     faceixB = randintrange(1,size(allfaces,3));
+%     stimix = randintrange(1,size(allstim,3));
+%     stimixB = randintrange(1,size(allstim,3));
 % 
 %     % mix
-%     face0 = (10^conval) * (allfaces(:,:,faceix)-grayval) + grayval + (fullnoise(:,:,1) .* facemask + grayval*(1-facemask)) - 127;
-%     face0B = (10^conval) * (allfaces(:,:,faceixB)-grayval) + grayval + (fullnoise(:,:,2) .* facemask + grayval*(1-facemask)) - 127;
+%     face0 = (10^conval) * (allstim(:,:,stimix)-grayval) + grayval + (fullnoise(:,:,1) .* facemask + grayval*(1-facemask)) - 127;
+%     face0B = (10^conval) * (allstim(:,:,stimixB)-grayval) + grayval + (fullnoise(:,:,2) .* facemask + grayval*(1-facemask)) - 127;
 %   
 %     % where are we putting the stimulus?
 %     csarg = [-round(alllocs{ppw}(1) * dfac) round(alllocs{ppw}(2) * dfac)];
@@ -641,7 +668,7 @@ for pp=1:length(alltodo{end})
 %     mov = cat(3,mov,repmat(face0B,[1 1 timing(5)]));
 % 
 %     % record
-%     stimrecord(:,end+1) = [pp alltodo{end}(pp) faceix faceixB]';
+%     stimrecord(:,end+1) = [pp alltodo{end}(pp) stimix stimixB]';
 
   end
 
@@ -652,10 +679,12 @@ for pp=1:length(alltodo{end})
   case {1 3}
     answer = whtarget;
   case {2 5 7 8 9 10 11 13}
-    answer = genders(subscript(sort(totalset),{faceix}));
+    answer = stimlabels(subscript(sort(totalset),{stimix}));
+  case {14}
+    answer = stimlabels(subscript(sort(totalset),{stimix}));
   case {6}
-%     answer = 2-(subscript(sort(totalset),{faceix})== ...
-%              subscript(sort(totalset),{faceixB}));
+%     answer = 2-(subscript(sort(totalset),{stimix})== ...
+%              subscript(sort(totalset),{stimixB}));
   case {12}
     % answer already defined above
   end
@@ -926,7 +955,7 @@ datarecord(:,end+1) = [length(alltodo{end}) durationsecs]';
 
 % save
 fprintf('Saving results to %s.\n',outfile);
-saveexcept(outfile,{'allfaces' 'txttemp' 'mov' 'face0' 'noise0' 'noiseframes' 'noiseframe' 'im0' 'facemask' 'temp'});
+saveexcept(outfile,{'allstim' 'txttemp' 'mov' 'face0' 'noise0' 'noiseframes' 'noiseframe' 'im0' 'facemask' 'temp'});
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% clean up
 
@@ -1025,11 +1054,11 @@ ptoff(oldclut);
 %     whtarget = (rand > .5) + 1;  % 1 means first; 2 means second
 %   
 %     % pick face
-%     faceix = randintrange(1,size(allfaces,3));
+%     stimix = randintrange(1,size(allstim,3));
 %   
 %     % construct face
 %     csarg = [-round((vidx(rri) * vstep) * dfac) round((hidx(cci) * hstep) * dfac)];
-%     face0 = placematrix(zeros(res,res),circshift(allfaces(:,:,faceix),csarg),[]);
+%     face0 = placematrix(zeros(res,res),circshift(allstim(:,:,stimix),csarg),[]);
 % 
 %           %%  mask0 = placematrix(zeros(res,res),circshift(facemask,csarg),[]);
 %           %   % add face
@@ -1062,13 +1091,13 @@ ptoff(oldclut);
 %     noiseframe = 127 + temp * (1/4 * 127 * pcon/100);
 % 
 %     % pick face
-%     faceix = randintrange(1,size(allfaces,3));
-%     faceixALT = firstel(permutedim(setdiff(1:size(allfaces,3),faceix)));
+%     stimix = randintrange(1,size(allstim,3));
+%     stimixALT = firstel(permutedim(setdiff(1:size(allstim,3),stimix)));
 %   
 %     % construct face
 %     csarg = [-round((vidx(rri) * vstep) * dfac) round((hidx(cci) * hstep) * dfac)];
-%     face0 = placematrix(127*ones(res,res),circshift(allfaces(:,:,faceix),csarg),[]);
-%     face0ALT = placematrix(127*ones(res,res),circshift(allfaces(:,:,faceixALT),csarg),[]);
+%     face0 = placematrix(127*ones(res,res),circshift(allstim(:,:,stimix),csarg),[]);
+%     face0ALT = placematrix(127*ones(res,res),circshift(allstim(:,:,stimixALT),csarg),[]);
 % 
 %     % change contrast of face
 %     face0 = (10^conval) * (face0-127) + 127;
@@ -1076,7 +1105,7 @@ ptoff(oldclut);
 % 
 % %     % construct face
 % %     csarg = [-round((vidx(rri) * vstep) * dfac) round((hidx(cci) * hstep) * dfac)];
-% %     face0 = placematrix(zeros(res,res),circshift(allfaces(:,:,faceix),csarg),[]);
+% %     face0 = placematrix(zeros(res,res),circshift(allstim(:,:,stimix),csarg),[]);
 % % 
 % %     % change contrast of face
 % %     face0 = (min(1,10^conval) * 127) * face0 + 127;
@@ -1109,12 +1138,12 @@ ptoff(oldclut);
 %     whtarget = (rand > .5) + 1;  % 1 means first; 2 means second
 %   
 %     % pick faces
-%     faceixs = randintrange(1,size(allfaces,3),[1 2],1);
+%     stimixs = randintrange(1,size(allstim,3),[1 2],1);
 %   
 %     % construct face
 %     csarg = [-round((vidx(rri) * vstep) * dfac) round((hidx(cci) * hstep) * dfac)];
-%     face1 = placematrix(zeros(res,res),circshift(allfaces(:,:,faceixs(1)),csarg),[]);
-%     face2 = placematrix(zeros(res,res),circshift(allfaces(:,:,faceixs(2)),csarg),[]);
+%     face1 = placematrix(zeros(res,res),circshift(allstim(:,:,stimixs(1)),csarg),[]);
+%     face2 = placematrix(zeros(res,res),circshift(allstim(:,:,stimixs(2)),csarg),[]);
 % 
 %     % add face
 %     noiseframes(:,:,whtarget) = noiseframes(:,:,whtarget) + ((basecon/100+10^conval)*127)*face1;
