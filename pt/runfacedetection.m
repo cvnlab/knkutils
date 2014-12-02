@@ -77,7 +77,7 @@ screennum = max(Screen('Screens'));  % we assume we are operating on screen with
 temp = Screen('Resolution',screennum);
 temp = [temp.width temp.height temp.hz temp.pixelSize];
 fprintf('Detected %s as the display setting for screen %d.\n',mat2str(temp),screennum);
-ptonparams = {temp,[],[]};  % resolution, [], gamma setting
+ptonparams = {temp,[],-1};  % resolution, [], gamma setting
 
 % calc some stuff
 res = ptonparams{1}(2);        % full vertical display resolution in pixels
