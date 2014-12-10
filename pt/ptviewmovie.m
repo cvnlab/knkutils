@@ -409,8 +409,8 @@ if ~isempty(framefiles)
     framefiles = {framefiles []};
   end
 end
-focase3 = iscell(fixationorder) & length(fixationorder{2})==2;
-focase4 = iscell(fixationorder) & length(fixationorder{2})==1;
+focase3 = iscell(fixationorder) && length(fixationorder{2})==2;
+focase4 = iscell(fixationorder) && length(fixationorder{2})==1;
 if focase3 && (length(fixationorder) == 5)
   fixationorder{6} = [];
 end
