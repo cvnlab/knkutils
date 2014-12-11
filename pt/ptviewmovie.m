@@ -544,7 +544,12 @@ movierect = CenterRect([0 0 round(scfactor*d2images) round(scfactor*d1images)],r
 if size(fixationsize,1) == 1  % dot case
   % easy case
   if ~focase4
-    fixationrect = CenterRect([0 0 2*fixationsize(1) 2*fixationsize(1)],rect) + [offset(1) offset(2) offset(1) offset(2)] + repmat(fixationorder{8},[1 2]);  % allow doubling of fixationsize for room for anti-aliasing
+    if focase3
+      fixationoff0 = repmat(fixationorder{8},[1 2]);  % in this case, we can have offsets specified
+    else
+      fixationoff0 = 0;
+    end
+    fixationrect = CenterRect([0 0 2*fixationsize(1) 2*fixationsize(1)],rect) + [offset(1) offset(2) offset(1) offset(2)] + fixationoff0;  % allow doubling of fixationsize for room for anti-aliasing
   % special case of multiple digits
   else
     fixationrect = {};
@@ -1261,7 +1266,7 @@ digitrecord = {digitrecord digitframe digitpolarity};
 
 % do some checks
 if wantcheck
-  ptviewmoviecheck(timeframes,timekeys);
+  ptviewmoviecheck(timeframes,timekeys,[],'t');
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
