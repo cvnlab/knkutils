@@ -975,6 +975,8 @@ else
       targetprop1 = 0.5;      % phscr insert?
       targetprop2 = 0.5;      % one-back identity repeat?
       offsetph = numviewpoints*numids;  % offset due to the phscr images
+      maxuniqueface = 4;      % number of maximum faces presented on a trial
+      numfaceframes = 16;     % out of 20 frames, how long is a given face on for?
 
       % calc
       framedesign = {};
@@ -986,11 +988,11 @@ else
         
           % should we insert phscr?
           if rand < targetprop1
-            phspot = randintrange(2,4);
-            numfacegen = 3;
+            phspot = randintrange(2,maxuniqueface);
+            numfacegen = maxuniqueface-1;
           else
             phspot = [];
-            numfacegen = 4;
+            numfacegen = maxuniqueface;
           end
         
           % generate a sequence of viewpoint numbers.  viewpoint always changes.
@@ -1012,7 +1014,7 @@ else
           
           % record
           temp = insertelt(offsetph + ((idnums-1)*numviewpoints + vpnums),phspot,randintrange(1,offsetph));
-          framedesign{p}(zz,:) = upsamplematrix(temp,[1 16],[],[],'nearest');
+          framedesign{p}(zz,:) = upsamplematrix(temp,[1 numfaceframes],[],[],'nearest');
           
           % special case (REPEAT PHYSICALLY IDENTICAL)
           % thus, it is here that physicality of face sequences is enforced (all three tasks see the same faces).
