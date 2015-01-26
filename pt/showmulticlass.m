@@ -37,7 +37,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 %                [34] or [38 39 40 41  48] or [42 43 44] or [45] or [46 47] or [49 55] or [50] or [51 52] or 
 %                [53 54] or [56 57 58] or [59 60 61] or [62 63 64 65] or [66] or [109 110] or [67 68 69 70 71 72] or
 %                [73 74 75 76 77] or [78 79 80 81] or [82 83 84 85 86 87  88] or [89 90 91 92 93 94] or 
-%                [95 96 97 98 99 100] or [101 102 103 104 105 106] or [107] or [108]
+%                [95 96 97 98 99 100] or [101 102 103 104 105 106] or [107] or [108] or [111]
 % <setnum> (optional) is
 %   1 means the original 31 stimulus classes [15 frames, 3s / 3s]
 %   2 means the horizontally-modulated random space stimuli plus small-scale checkerboard and letters [15 frames, 3s / 3s]
@@ -150,6 +150,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 %   108 is readingD
 %   109 is (see above)
 %   110 is (see above)
+%   111 is categoryC10
 %   default: 1.
 % <isseq> (optional) is whether to do the special sequential showing case.  should be either 0 which
 %   means do nothing special, or a positive integer indicating which frame to use.  if a positive
@@ -186,6 +187,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 % show the stimulus and then save workspace (except the variable 'images') to <outfile>.
 
 % history:
+% 2015/01/25 - implement expt 111
 % 2014/10/08 - implement the {G} case for <fixationinfo>
 % 2014/07/15 - institute the input "stimulusdir" and release publicly.
 % 2014/05/29 - use imresizememory to resample
@@ -261,6 +263,8 @@ case {62 63 64 65}
   stimfile = fullfile(stimulusdir,'workspace_categoryC7.mat');
 case {66 109 110}
   stimfile = fullfile(stimulusdir,'workspace_categoryC8.mat');
+case {111}
+  stimfile = fullfile(stimulusdir,'workspace_categoryC10.mat');
 case {95 96 97 98 99 100}
   stimfile = fullfile(stimulusdir,'workspace_readingB.mat');
 case {107}
@@ -371,9 +375,9 @@ end
 %%%%%%%%%%%%% some experiments need some pre-setup
 
 switch setnum(1)
-case {109 110}
+case {109 110 111}
   if isempty(existingfile)
-    [mastercuestim,digitnamerecord,digitcolorrecord,gentrialpattern,designmatrix] = setupmulticlass109(setnum(1));
+    [mastercuestim,digitnamerecord,digitcolorrecord,gentrialpattern,designmatrix] = setupmulticlassfun(setnum(1));
   else
     load(existingfile,'mastercuestim','digitnamerecord','digitcolorrecord','gentrialpattern','designmatrix');
   end
@@ -956,6 +960,70 @@ else
         end
       end
     end
+  case {111}
+    if isseq
+      framedesign = {};
+      for p=1:15
+        framedesign{p} = isseq;
+      end
+    else
+    
+      % define
+      numpresrun = 3;
+      numviewpoints = 7;
+      numids = 95;
+      targetprop1 = 0.5;      % phscr insert?
+      targetprop2 = 0.5;      % one-back identity repeat?
+      offsetph = numviewpoints*numids;  % offset due to the phscr images
+
+      % calc
+      framedesign = {};
+      for p=1:15
+        framedesign{p} = [];
+
+        % there are several presentations in each run
+        for zz=1:numpresrun
+        
+          % should we insert phscr?
+          if rand < targetprop1
+            phspot = randintrange(2,4);
+            numfacegen = 3;
+          else
+            phspot = [];
+            numfacegen = 4;
+          end
+        
+          % generate a sequence of viewpoint numbers.  viewpoint always changes.
+          while 1
+            vpnums = ceil(numviewpoints*rand(1,numfacegen));
+            if ~any(diff(vpnums)==0)
+              break;
+            end
+          end
+        
+          % generate a sequence of identity numbers.  no repeats at all.
+          idnums = subscript(permutedim(1:numids),1:numfacegen);
+
+          % decide if this is a target trial.  if so, repeat an identity
+          if rand < targetprop2
+            repn = randintrange(2,numfacegen);  % the repeat frame number (relative to the face slots)
+            idnums(repn) = idnums(repn-1);
+          end
+          
+          % record
+          temp = insertelt(offsetph + ((idnums-1)*numviewpoints + vpnums),phspot,randintrange(1,offsetph));
+          framedesign{p}(zz,:) = upsamplematrix(temp,[1 16],[],[],'nearest');
+          
+          % special case (REPEAT PHYSICALLY IDENTICAL)
+          % thus, it is here that physicality of face sequences is enforced (all three tasks see the same faces).
+          if ismember(setnum(1),[111])
+            framedesign{p} = repmat(framedesign{p}(zz,:),[numpresrun 1]);
+            break;
+          end
+
+        end
+      end
+    end
   case {95}
     if isseq
       framedesign = {};
@@ -1241,6 +1309,9 @@ if isseq
   case {66 109 110}
     trialpattern = eye(25);
     onpattern = [1];
+  case {111}
+    trialpattern = eye(15);
+    onpattern = [1];
   case {95 96 97 98 99 100 107}
     trialpattern = eye(32);
     onpattern = [1];
@@ -1294,6 +1365,9 @@ else
   case {109 110}
     trialpattern = gentrialpattern;
     onpattern = [zeros(1,4*2) ones(1,7*2) zeros(1,2)];
+  case {111}
+    trialpattern = gentrialpattern;
+    onpattern = [zeros(1,2*20) repmat([ones(1,16) zeros(1,4)],[1 4])];
   case {95}
     load(infofile_readingB,'trialpattern','onpattern');
   case {96}
@@ -1573,10 +1647,12 @@ else
 %     temp2 = [tempF(13+(1:12))]; mat2str(sort(temp2))
     switch setnum(1)
     case 109
-      classorder = [1 2 6 7 11 12 14 15 19 20 21 22 25];  % note that randomization is implemented via setupmulticlass109
+      classorder = [1 2 6 7 11 12 14 15 19 20 21 22 25];  % note that randomization is implemented via setupmulticlassfun
     case 110
       classorder = [3 4 5 8 9 10 13 16 17 18 23 24];
     end
+  case {111}
+    classorder = [1:15];
   case {95 96 97 98 99 100 107}
     classorder = [1:32];
   case {108}
@@ -1675,7 +1751,7 @@ else
     % N/A but do this just so the below line won't fail
     classorder = [];
   end
-  if ~isseq && ~ismember(setnum(1),[26 109 110])  % 109-110 is special. we pre-specify, so no randomization etc.
+  if ~isseq && ~ismember(setnum(1),[26 109 110 111])  % 109-111 is special. we pre-specify, so no randomization etc.
     classorder = permutedim(classorder);
     
     % make sure beginning and end are stimulus trials and make sure no two consecutive blank trials
@@ -2044,9 +2120,10 @@ otherwise  % this is the normal case
         temp = onpattern;
       
         % this is a special case to modulate position on the fly  [%% framecolor not handled because specialness of setnum]
-        if ismember(setnum(1),[66 109 110 67 68 69 70 71 72])
+        if ismember(setnum(1),[66 109 110 67 68 69 70 71 72 111])
         
-          % they all come from the first and only class, so there is no offset here
+          % they either (1) all come from the first and only class or (2) we handled the offset manually,
+          % so there is no need for offset here
           temp(onpattern==1) = framedesign0{stimclass}(1,:);
         
           % taken from prepareimages_categoryC.m:
@@ -2055,15 +2132,32 @@ otherwise  % this is the normal case
             csfirst = [-189 -189 -189 -189 -189;-94 -94 -94 -94 -94;0 0 0 0 0;95 95 95 95 95;189 189 189 189 189];
             cssecond = [-189 -94 0 95 189;-189 -94 0 95 189;-189 -94 0 95 189;-189 -94 0 95 189;-189 -94 0 95 189];
             gridnn = 5;
+            rowii = ceil(stimclass/gridnn);
+            colii = mod2(stimclass,gridnn);
           case {67 68 69 70 71 72}
             csfirst = [-172 -172 -172 -172 -172 -172 -172 -172 -172;-129 -129 -129 -129 -129 -129 -129 -129 -129;-86 -86 -86 -86 -86 -86 -86 -86 -86;-43 -43 -43 -43 -43 -43 -43 -43 -43;0 0 0 0 0 0 0 0 0;43 43 43 43 43 43 43 43 43;86 86 86 86 86 86 86 86 86;129 129 129 129 129 129 129 129 129;172 172 172 172 172 172 172 172 172];
             cssecond = [-156 -117 -78 -39 0 39 78 117 156;-156 -117 -78 -39 0 39 78 117 156;-156 -117 -78 -39 0 39 78 117 156;-156 -117 -78 -39 0 39 78 117 156;-156 -117 -78 -39 0 39 78 117 156;-156 -117 -78 -39 0 39 78 117 156;-156 -117 -78 -39 0 39 78 117 156;-156 -117 -78 -39 0 39 78 117 156;-156 -117 -78 -39 0 39 78 117 156];
             gridnn = 9;
+            rowii = ceil(stimclass/gridnn);
+            colii = mod2(stimclass,gridnn);
+          case {111}
+            % assume that dres is specified as [A B], where A==B and this is what
+            % is necessary to make it such that what used to be 26.5/66*378*2
+            % pixels would then correspond to 4 deg.
+            degtopx = (dres(1)/378 * (26.5/66*378*2)) / 4;  % convert deg to px
+            xlocs0 = linspace(-18,18,15);
+            ylocs0 = 0;
+            cssecond = [];
+            csfirst = [];
+            for rowii=1:length(ylocs0)
+              for colii=1:length(xlocs0)
+                cssecond(rowii,colii) = round(xlocs0(colii) * degtopx);    % circshift second arg
+                csfirst(rowii,colii) = round(-ylocs0(rowii) * degtopx);    % circshift first arg
+              end
+            end
+            rowii = 1;
+            colii = stimclass;
           end
-        
-          % calculate indices of the location we are doing
-          rowii = ceil(stimclass/gridnn);
-          colii = mod2(stimclass,gridnn);
 
           % construct frameorder
           temp2 = repmat([csfirst(rowii,colii); cssecond(rowii,colii)],[1 length(temp)]);
@@ -2398,11 +2492,11 @@ save(outfile,vars{:});
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [mastercuestim,digitnamerecord,digitcolorrecord,gentrialpattern,designmatrix] = setupmulticlass109(setnum)
+function [mastercuestim,digitnamerecord,digitcolorrecord,gentrialpattern,designmatrix] = setupmulticlassfun(setnum)
 
-% this function generates a fresh random specification for the 109-110 experiment.
+% this function generates a fresh random specification for the 109-110 and 111 experiments.
 
-% notes:
+% notes (109-110):
 % - 18-s rest + 51 trials x 6-s trials + 18-s rest = 342 seconds (171 TRs)
 % - 18-s rest + 48 trials x 6-s trials + 18-s rest = 324 seconds (162 TRs)
 % - (13 stimuli + 3 blank trials) x 3 tasks + 3 blank-blank trials = 51 trials
@@ -2412,19 +2506,43 @@ function [mastercuestim,digitnamerecord,digitcolorrecord,gentrialpattern,designm
 % - enforce physical identicality across tasks (including the blank trials)
 %   - this includes digit sequence and face frames (if applicable) and dots
 
-% define
-taskletters = 'GDF';
+% notes (111):
+% - 18-s rest + 57 trials x 6-s trials + 18-s rest = 378 seconds (189 TRs)
+% - (15 stimuli + 3 blank trials) x 3 tasks + 3 blank-blank trials = 57 trials
+% - blank trials still involve cue and digits; blank-blank trials just involve digits
+% - GOF: Digit, Oddball, Face
+% - enforce physical identicality across tasks (including the blank trials)
+%   - this includes digit sequence and face frames (if applicable)
 
 % define
 switch setnum
 case 109
+  taskletters = 'GDF';
   nin = 13;
   tottrials = 51;
   classorder = [1 2 6 7 11 12 14 15 19 20 21 22 25];  % ugly, steal this from above
+  fps = 4;
+  digitups = 1;
+  numdigitstr = 2+7;
+  totstimunique = 25;
 case 110
+  taskletters = 'GDF';
   nin = 12;
   tottrials = 48;
   classorder = [3 4 5 8 9 10 13 16 17 18 23 24];  % ugly, steal this from above
+  fps = 4;
+  digitups = 1;
+  numdigitstr = 2+7;
+  totstimunique = 25;
+case 111
+  taskletters = 'GOF';
+  nin = 15;
+  tottrials = 57;
+  classorder = 1:15;
+  fps = 20;
+  digitups = 5;          % number of frames for a single digit
+  numdigitstr = 2+8;     % number of digits occurring in a trial
+  totstimunique = 15;    % total number of unique stimuli (not tasks) in the experiment
 end
 
 % this tells us the master sequence
@@ -2447,13 +2565,19 @@ while 1
 end
 
 % initialize full record of digits
-digitnamerecord = NaN*zeros(1,4*(18 + tottrials*6 + 18));
+digitnamerecord = NaN*zeros(1,fps*(18 + tottrials*6 + 18));
 digitcolorrecord = zeros(size(digitnamerecord));  % 0 means black, 1 means white
 
 % handle initial blank period
-ix = linspacefixeddiff(1,2,2*18);  % 2 digits per second
-digitnamerecord(:,ix) = randintrange(0,9,[1 length(ix)])+1;  % fully random [1-10]
-digitcolorrecord(:,ix) = repmat([1 0],[1 2*18/2]);  % white/black alternation
+  %OLD:ix = linspacefixeddiff(1,2,2*18);  % 2 digits per second
+offset = 0;
+ix = [];
+for p=1:18
+  ix = [ix (p-1)*fps+[1:digitups digitups*2+(1:digitups)]];  % 2 digits per second
+end
+  % fully random [1-10]
+digitnamerecord(:,offset + ix) = upsamplematrix(randintrange(0,9,[1 length(ix)/digitups])+1,digitups,2,[],'nearest');
+digitcolorrecord(:,offset + ix) = repmat([1*ones(1,digitups) 0*ones(1,digitups)],[1 18]);  % white/black alternation
 
 % record
 clock0 = sum(100*clock);
@@ -2462,13 +2586,16 @@ clock0 = sum(100*clock);
 for p=1:length(mastercuestim)
 
   % calc
-  offset = 4*18 + (p-1)*(4*6);
+  offset = fps*18 + (p-1)*(fps*6);
 
   % handle blank-blank trials up front
   if isnan(mastercuestim(p))
-    ix = linspacefixeddiff(1,2,2*6);  % 2 digits per second
-    digitnamerecord(:, offset + ix) = randintrange(0,9,[1 length(ix)])+1;  % fully random [1-10]
-    digitcolorrecord(:,offset + ix) = repmat([1 0],[1 2*6/2]);  % white/black alternation
+    ix = [];
+    for q=1:6
+      ix = [ix (q-1)*fps+[1:digitups digitups*2+(1:digitups)]];  % 2 digits per second
+    end
+    digitnamerecord(:, offset + ix) = upsamplematrix(randintrange(0,9,[1 length(ix)/digitups])+1,digitups,2,[],'nearest');  % fully random [1-10]
+    digitcolorrecord(:,offset + ix) = repmat([1*ones(1,digitups) 0*ones(1,digitups)],[1 6]);  % white/black alternation
     continue;
   end
 
@@ -2477,21 +2604,26 @@ for p=1:length(mastercuestim)
   setrandstate({clock0+999*floor(mastercuestim(p)/10)});
   
   % cue (red)
-  digitnamerecord(:, offset + (1:2)) = repmat(10+(double(taskletters(mod(mastercuestim(p),10)))-64),[1 2]);
-  digitcolorrecord(:,offset + (1:2)) = 2;
+  digitnamerecord(:, offset + (1:fps/2)) = 10+(double(taskletters(mod(mastercuestim(p),10)))-64);
+  digitcolorrecord(:,offset + (1:fps/2)) = 2;
   
-  % stream of digits (9 of them)
-  ix = linspacefixeddiff(1,2,9);
-  digitnamerecord(:, offset + 4 + ix) = [randintrange(0,9,[1 9],1)+1];  % random but no repeat!
-  digitcolorrecord(:,offset + 4 + ix) = [repmat([1 0],[1 4]) 1];
-  
-  % repeat the digit maybe
-  for q=1:1
-    if rand < .5
-      fr = randintrange(2,9);
-      digitnamerecord(q,offset + 4 + ix(fr)) = digitnamerecord(q,offset + 4 + ix(fr-1));
-    end
+  % generate digits and then repeat the digit maybe
+  temp = randintrange(0,9,[1 numdigitstr],1)+1;
+  if rand < .5
+    fr = randintrange(2,numdigitstr);
+    temp(fr) = temp(fr-1);
   end
+
+  % stream of digits
+     % OLD: ix = linspacefixeddiff(1,2,numdigitstr);
+  ix = [];
+  for q=1:numdigitstr
+    ix = [ix (q-1)*(fps/2)+[1:digitups]];
+  end
+  
+  % record
+  digitnamerecord(:, offset + fps + ix) = upsamplematrix(temp,digitups,2,[],'nearest');
+  digitcolorrecord(:,offset + fps + ix) = subscript(repmat([1*ones(1,digitups) 0*ones(1,digitups)],[1 ceil(numdigitstr/2)]),{':' 1:digitups*numdigitstr});
 
 end
 
@@ -2499,13 +2631,17 @@ end
 setrandstate;
 
 % handle ending blank period
-offset = 4*18 + 4*(tottrials*6);
-ix = linspacefixeddiff(1,2,2*18);  % 2 digits per second
-digitnamerecord(:,offset + ix) = randintrange(0,9,[1 length(ix)])+1;  % fully random [1-10]
-digitcolorrecord(:,offset + ix) = repmat([1 0],[1 2*18/2]);  % white/black alternation
+offset = fps*18 + fps*(tottrials*6);
+ix = [];
+for p=1:18
+  ix = [ix (p-1)*fps+[1:digitups digitups*2+(1:digitups)]];  % 2 digits per second
+end
+  % fully random [1-10]
+digitnamerecord(:,offset + ix) = upsamplematrix(randintrange(0,9,[1 length(ix)/digitups])+1,digitups,2,[],'nearest');
+digitcolorrecord(:,offset + ix) = repmat([1*ones(1,digitups) 0*ones(1,digitups)],[1 18]);  % white/black alternation
 
 % now deal with gentrialpattern [note that we intend to circumvent classorder (i.e. we don't randomize it)].
-% this has a limited number of columns (e.g. 13 or 12), and the columns have random onsets.
+% this may have a limited number of columns (e.g. 13 or 12), and the columns have random onsets.
 gentrialpattern = zeros(3+tottrials+3,nin);
 for p=1:length(mastercuestim)
   stimnum = floor(mastercuestim(p)/10);
@@ -2515,7 +2651,7 @@ for p=1:length(mastercuestim)
 end
 
 % now deal with designmatrix
-designmatrix = zeros(3+tottrials+3,25*3+3);  % stimulus-evoked digit, dot, face; cue-related digit, dot, face
+designmatrix = zeros(3+tottrials+3,totstimunique*3+3);  % stim-evoked Task1, Task2, Task3; cue-related Task1, Task2, Task3
 for p=1:length(mastercuestim)
   if isnan(mastercuestim(p))
     continue;
@@ -2523,7 +2659,7 @@ for p=1:length(mastercuestim)
   stimnum = floor(mastercuestim(p)/10);
   tasknum = mod(mastercuestim(p),10);
   if stimnum <= nin
-    designmatrix(3+p,(tasknum-1)*25+classorder(stimnum)) = 1;
+    designmatrix(3+p,(tasknum-1)*totstimunique+classorder(stimnum)) = 1;
   end
-  designmatrix(3+p,25*3+tasknum) = 1;
+  designmatrix(3+p,totstimunique*3+tasknum) = 1;
 end
