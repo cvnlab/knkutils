@@ -287,6 +287,8 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   So it is important to test your particular setup!
 %
 % history:
+% 2015/01/25 - fill gray is now whole screen; new implementation of the circshifting;
+%              movierect defined right before use
 % 2014/10/21 - implement colors for the {A C X Y Z} case of <fixationorder>
 % 2014/10/15 - implement the H argument for <fixationorder>
 % 2014/10/08 - implement the {A C X Y Z} case for <fixationorder>.  implement special B case for <trialtask>.
@@ -539,8 +541,7 @@ if isempty(fixationorder)
   fixationorder = ones(1,1+size(frameorder,2)+1);
 end
 
-% prepare movierect and fixationrect
-movierect = CenterRect([0 0 round(scfactor*d2images) round(scfactor*d1images)],rect) + [offset(1) offset(2) offset(1) offset(2)];
+% prepare fixationrect (movierect is now computed right before it is needed)
 if size(fixationsize,1) == 1  % dot case
   % easy case
   if ~focase4
@@ -975,10 +976,11 @@ for frame=1:frameskip:size(frameorder,2)+1
   % if special 0 case, just fill with gray
   MI = [];
   if frameorder(1,frame0) == 0
-    Screen('FillRect',win,grayval,movierect);
+    Screen('FillRect',win,grayval);   % REMOVED! this means do whole screen.    % ,movierect);
 
   % otherwise, make a texture, draw it at a particular position
   else
+    extracircshift = [0 0];
     if iscellimages
       if dimwithim==4   % THIS IS VERY VERY UGLY
         switch size(whs,2)
@@ -988,7 +990,8 @@ for frame=1:frameskip:size(frameorder,2)+1
           MI = maskimages(:,:,whs(frame0,3));
           txttemp = feval(flipfun,cat(3,images{whs(frame0,1)}(:,:,:,whs(frame0,2)),MI));
         case 4
-          txttemp = feval(flipfun,circshift(images{whs(frame0,1)}(:,:,:,whs(frame0,2)),whs(frame0,3:4)));
+          txttemp = feval(flipfun,images{whs(frame0,1)}(:,:,:,whs(frame0,2)));
+          extracircshift = whs(frame0,3:4);
         end
         texture = Screen('MakeTexture',win,txttemp);
       else
@@ -999,7 +1002,8 @@ for frame=1:frameskip:size(frameorder,2)+1
           MI = maskimages(:,:,whs(frame0,3));
           txttemp = feval(flipfun,cat(3,images{whs(frame0,1)}(:,:,whs(frame0,2)),MI));
         case 4
-          txttemp = feval(flipfun,circshift(images{whs(frame0,1)}(:,:,whs(frame0,2)),whs(frame0,3:4)));
+          txttemp = feval(flipfun,images{whs(frame0,1)}(:,:,whs(frame0,2)));
+          extracircshift = whs(frame0,3:4);
         end
         texture = Screen('MakeTexture',win,txttemp);
       end
@@ -1011,10 +1015,14 @@ for frame=1:frameskip:size(frameorder,2)+1
         MI = maskimages(:,:,frameorder(2,frame0));
         txttemp = feval(flipfun,cat(3,images(:,:,:,frameorder(1,frame0)),MI));
       case 3
-        txttemp = feval(flipfun,circshift(images(:,:,:,frameorder(1,frame0)),frameorder(2:3,frame0)'));
+        txttemp = feval(flipfun,images(:,:,:,frameorder(1,frame0)));
+        extracircshift = frameorder(2:3,frame0)';
       end
       texture = Screen('MakeTexture',win,txttemp);
     end
+    movierect = CenterRect([0 0 round(scfactor*d2images) round(scfactor*d1images)],rect) + ...
+                repmat(extracircshift([2 1]),[1 2]) + ...
+                [offset(1) offset(2) offset(1) offset(2)];
     if size(framecolor,2) == 3  % the usual case
       Screen('DrawTexture',win,texture,[],movierect,0,filtermode,1,framecolor(frame0,:));
     else
