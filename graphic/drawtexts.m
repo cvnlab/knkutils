@@ -12,7 +12,7 @@ function f = drawtexts(res,x,y,font,sz,color,bg,word)
 % note that we explicitly convert to grayscale.
 %
 % example:
-% figure; imagesc(makeimagestack(drawtexts(100,0,0,'Helvetica',100,[0 .5 0],[0 0 0],{'A' 'B' 'C'}))); axis equal tight;
+% figure; imagesc(makeimagestack(drawtexts(100,0,0,'Helvetica',.5,[0 .5 0],[0 0 0],{'A' 'B' 'C'}))); axis equal tight;
 
 % NOTE: see also drawclosedcontours.m.
 
