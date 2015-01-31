@@ -15,6 +15,7 @@ function oldclut = pton(resolution,winsize,clutfile,skipsync)
 %       in this case, we calculate the clut that achieves a linear response.
 %   (4) 0 which means to use a linear clut
 %   (4b) -1 which means to use a sqrt clut
+%   (4c) -2 which means to use a sq clut
 %   (5) [] which means to do nothing (i.e. do not touch the clut)
 %   the clut should be a 256 x 3 matrix with values in [0,1].
 %   default: [].
@@ -91,6 +92,8 @@ if ~isempty(clutfile)
     clut = repmat(linspace(0,1,256)',[1 3]);
   elseif isequal(clutfile,-1)
     clut = repmat(sqrt(linspace(0,1,256)'),[1 3]);
+  elseif isequal(clutfile,-2)
+    clut = repmat(linspace(0,1,256)'.^2,[1 3]);
   elseif ischar(clutfile)
     if isequal(clutfile(end-3:end),'.mat')
       clut = loadmulti(clutfile,'clut');
