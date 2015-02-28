@@ -1,6 +1,6 @@
-function [keytimes,badtimes,keybuttons] = ptviewmoviecheck(timeframes,timekeys,deltatime,badkey,deltatimeBAD)
+function [keytimes,badtimes,keybuttons] = ptviewmoviecheck(timeframes,timekeys,deltatime,badkey,deltatimeBAD,wanthide)
 
-% function [keytimes,badtimes,keybuttons] = ptviewmoviecheck(timeframes,timekeys,deltatime,badkey,deltatimeBAD)
+% function [keytimes,badtimes,keybuttons] = ptviewmoviecheck(timeframes,timekeys,deltatime,badkey,deltatimeBAD,wanthide)
 % 
 % <timeframes>,<timekeys> are outputs from ptviewmovie.m
 % <deltatime> (optional) is the time differential in seconds that must
@@ -10,6 +10,8 @@ function [keytimes,badtimes,keybuttons] = ptviewmoviecheck(timeframes,timekeys,d
 %   for which the first character matches <badkey>.  if [] do nothing special.
 %   default: [].
 % <deltatimeBAD> (optional) is like <deltatime> but for <badkey>.  default: 0.25.
+% <wanthide> (optional) is whether to make the two figure windows that we create
+%   invisible. Default: 0.
 %
 % draw some figures visualizing the contents of <timeframes> and <timekeys>.
 % return a vector with keypress times in <keytimes> and a vector with
@@ -17,6 +19,7 @@ function [keytimes,badtimes,keybuttons] = ptviewmoviecheck(timeframes,timekeys,d
 % returned in <keybuttons>.
 %
 % history:
+% - 2015/02/28 - add <wanthide>
 % - 2014/09/16 - now return keybuttons as output
 % - 2014/06/12 - revamp to function behavior. now return useful outputs.
 %
@@ -36,14 +39,17 @@ end
 if ~exist('deltatimeBAD','var') || isempty(deltatimeBAD)
   deltatimeBAD = 0.25;
 end
+if ~exist('wanthide','var') || isempty(wanthide)
+  wanthide = 0;
+end
 
 % look at difference in frame times
-drawnow; figure; plot(diff(timeframes),'r-');
+drawnow; figureprep([],~wanthide); plot(diff(timeframes),'r-');
 xlabel('frame difference'); ylabel('duration (seconds)');
 title('inspection of timeframes');
 
 % look at timekeys
-drawnow; figure; setfigurepos([50 50 800 300]); hold on;
+drawnow; figureprep([50 50 800 300],~wanthide); hold on;
 
 % first we have to expand the multiple-keypresses cases
 timekeysB = {};
