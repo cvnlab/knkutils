@@ -2145,9 +2145,9 @@ otherwise  % this is the normal case
           case {111}
             % assume that dres is specified as [A B], where A==B and this is what
             % is necessary to make it such that what used to be 26.5/66*378*2
-            % pixels would then correspond to 4 deg.
-            degtopx = (dres(1)/378 * (26.5/66*378*2)) / 4;  % convert deg to px
-            xlocs0 = linspace(-18,18,15);
+            % pixels would then correspond to 6 deg.
+            degtopx = (dres(1)/378 * (26.5/66*378*2)) / 6;  % convert deg to px
+            xlocs0 = linspace(-20,20,15);
             ylocs0 = 0;
             cssecond = [];
             csfirst = [];
@@ -2537,7 +2537,7 @@ case 110
   numdigitstr = 2+7;
   totstimunique = 25;
 case 111
-  taskletters = 'GOF';
+  taskletters = 'DOF';
   nin = 15;
   tottrials = 57;
   classorder = 1:15;
