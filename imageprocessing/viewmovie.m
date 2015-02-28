@@ -9,6 +9,8 @@ function viewmovie(data,mode,rot,prct,autopermute,cmap,offset)
 %   A where A is a string with %d in it (e.g. 'blah/image%03d')
 %     means write 1-indexed files like blah/image001.png, blah/image002.png, etc.
 %     we automatically create the directory if necessary.
+%   {B F} where B is a filename (e.g. 'blah/movie.mov') and F is the number of 
+%     frames per second.  we automatically create the directory if necessary.
 %   default: 0.
 % <rot> (optional) is an integer indicating CCW in-slice rotation to apply. default: 0.
 % <prct> (optional) is
@@ -39,13 +41,15 @@ function viewmovie(data,mode,rot,prct,autopermute,cmap,offset)
 %   - : slower (slowest speed is 1 s for each frame)
 %   = : faster (fastest speed is 10 ms for each frame)
 %   ESCAPE : quit
-% when <mode> is 1, write images according to the string specified by <mode>.
+% when <mode> is A, write images according to the string specified by <mode>.
+% when <mode> is {B F}, write a movie (using QTWriter.m, an external dependency) to the 
+%   file specified by <mode>.
+%
+% history:
+% - 2015/02/28 - add {B F} mode for <mode>
 %
 % example:
 % viewmovie(randn(64,64,16,100));
-
-% NOTE: WE COULD GO ALL THE WAY AND AUTOMATE THE CONVERSION OF IMAGE SEQUENCES INTO A QUICKTIME MOVIE USING QT_TOOLS OR SOMETHING...
-%     however, there might still be that bug where the duration is always 1 s (or more?)
 
 % constants
 framedelay = 0.1;      % delay between successive frames (but this can be changed by the user)
@@ -239,7 +243,7 @@ if isequal(mode,0)
 
   end
 
-else
+elseif ~iscell(mode)
 
   % make the directory if necessary
   if ~isempty(stripfile(mode))
@@ -255,5 +259,28 @@ else
   for cnt=1:size(data,4)
     imwrite(makeimagestack(data(:,:,:,cnt),[],j),cmap0,sprintf([mode '.png'],offset+cnt));
   end
+
+else
+
+  % make the directory if necessary
+  if ~isempty(stripfile(mode{1}))
+    mkdirquiet(stripfile(mode{1}));
+  end
+
+  % write the images
+  if isempty(cmap)
+    cmap0 = choose(length(prct)==2 | prct(1) > 0,gray(256),cmapsign(256));
+  else
+    cmap0 = cmap;
+  end
+  mov = QTWriter(mode{1});
+  mov.FrameRate = mode{2};
+  fprintf('writing movie');
+  for cnt=1:size(data,4)
+    statusdots(cnt,size(data,4));
+    writeMovie(mov,uint8(255*cmaplookup(double(makeimagestack(data(:,:,:,cnt),[],j)),-.5,255.5,0,cmap0)));
+  end
+  fprintf('done.\n');
+  close(mov);
 
 end
