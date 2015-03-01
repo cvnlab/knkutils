@@ -179,6 +179,7 @@ string/
 
 io/
   absolutepath - return the absolute path to a given file
+  clearexcept - clear all variables except certain variables
   getextension - get the extension (e.g. '.txt') of a filename
   loadbinary - load numbers from a binary file
   loadexcept - load variables from a .mat file, excluding certain variables
@@ -193,6 +194,8 @@ io/
   savebinary - save numbers to a binary file
   saveexcept - save all variables to a .mat file, excluding certain variables
   savetext - save strings to a text file
+  shuffletext - shuffle lines in a text file
+  stripext - remove the extension from a file name
   stripfile - remove the file name from a string
 
 math/
@@ -427,6 +430,7 @@ figure/
 
 colormap/
   cmapang - hue-based colormap suitable for circular ranges (e.g. angles)
+  cmapangLR - like cmapang.m but left-right flipped
   cmapangLVF - like cmapang.m but focused on the left visual field
   cmapangRVF - like cmapang.m but focused on the right visual field
   cmapdistinct - hue-based colormap for cases where you want maximally distinct colors
@@ -435,6 +439,7 @@ colormap/
   cmapsign - blue-black-red colormap suitable for ranges like [-X X]
   cmapsign2 - blue-white-red colormap suitable for ranges like [-X X]
   cmapsign3 - blue-lightgray-red colormap suitable for ranges like [-X X]
+  cmapsign4 - cyan-blue-black-red-yellow colormap suitable for ranges like [-X X]
   colorinterpolate - make a colormap by interpolating between key colors
   drawcolorbar - draw a colorbar on the current figure
   drawcolorbarcircular - draw a circular colorbar on the current figure
