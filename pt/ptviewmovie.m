@@ -287,6 +287,7 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   So it is important to test your particular setup!
 %
 % history:
+% 2015/03/23 - oops. fix bug in the circshifting introduced by the previous checkin.
 % 2015/01/25 - fill gray is now whole screen; new implementation of the circshifting;
 %              movierect defined right before use
 % 2014/10/21 - implement colors for the {A C X Y Z} case of <fixationorder>
@@ -991,7 +992,7 @@ for frame=1:frameskip:size(frameorder,2)+1
           txttemp = feval(flipfun,cat(3,images{whs(frame0,1)}(:,:,:,whs(frame0,2)),MI));
         case 4
           txttemp = feval(flipfun,images{whs(frame0,1)}(:,:,:,whs(frame0,2)));
-          extracircshift = whs(frame0,3:4);
+          extracircshift = whs(frame0,3:4) .* (-2*(movieflip-.5));
         end
         texture = Screen('MakeTexture',win,txttemp);
       else
@@ -1003,7 +1004,7 @@ for frame=1:frameskip:size(frameorder,2)+1
           txttemp = feval(flipfun,cat(3,images{whs(frame0,1)}(:,:,whs(frame0,2)),MI));
         case 4
           txttemp = feval(flipfun,images{whs(frame0,1)}(:,:,whs(frame0,2)));
-          extracircshift = whs(frame0,3:4);
+          extracircshift = whs(frame0,3:4) .* (-2*(movieflip-.5));
         end
         texture = Screen('MakeTexture',win,txttemp);
       end
@@ -1016,7 +1017,7 @@ for frame=1:frameskip:size(frameorder,2)+1
         txttemp = feval(flipfun,cat(3,images(:,:,:,frameorder(1,frame0)),MI));
       case 3
         txttemp = feval(flipfun,images(:,:,:,frameorder(1,frame0)));
-        extracircshift = frameorder(2:3,frame0)';
+        extracircshift = frameorder(2:3,frame0)' .* (-2*(movieflip-.5));
       end
       texture = Screen('MakeTexture',win,txttemp);
     end
