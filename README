@@ -261,6 +261,7 @@ stats/
   calcoptimalhistbins - calculate the optimum number of bins to use for hist.m
   calcrbflikelihood - calculate likelihood of a set of points given a collection of RBFs
   calcrectlikelihood - calculate likelihood of a set of points given a collection of directions (half-squared responses)
+  calcrobustsummary - calculate the median and one-half of the central 68% range
   calcsurfaceareanball - calculate surface area of a unit n-ball
   centerofmass - calculate the center-of-mass of a matrix
   constructdctmatrix - construct a matrix with DCT-II basis functions in the columns
@@ -369,6 +370,7 @@ imageprocessing/
   ifftshift2 - apply ifftshift along the first two dimensions
   imagefilter - filter images with a Fourier-defined magnitude-based filter
   imagesearch - search through image space to minimize some cost function
+  imagesequencetomovie - make a QT movie from images
   imreadmulti - load in multiple images
   imresizedifferentfov - resize an image but use a different field-of-view
   imresizememory - call imresize on a bunch of images, minimizing memory usage
