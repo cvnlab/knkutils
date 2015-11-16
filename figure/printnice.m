@@ -1,6 +1,6 @@
-function printnice(figs,mode,directory,prefix)
+function filenames = printnice(figs,mode,directory,prefix)
 
-% function printnice(figs,mode,directory,prefix)
+% function filenames = printnice(figs,mode,directory,prefix)
 %
 % <figs> (optional) is a vector of figure numbers.  default: [gcf].
 % <mode> (optional) is
@@ -17,6 +17,7 @@ function printnice(figs,mode,directory,prefix)
 %   default: '%d'.
 %
 % print figure windows to files in <directory>.
+% return a cell vector of the files written.
 %
 % note that if <prefix> has a directory that precedes the actual filename,
 % we attempt to automatically make that directory.
@@ -58,6 +59,7 @@ if ~isempty(dir0) && ~exist(dir0,'dir')
 end
 
 % do it
+filenames = {};
 for p=1:length(figs)
   fig = figs(p);
 
@@ -65,22 +67,31 @@ for p=1:length(figs)
   prev = get(fig,'PaperPositionMode');
   set(fig,'PaperPositionMode','auto');
 
+  if ~isa(fig,'double')
+    fig0 = fig.Number;
+  else
+    fig0 = fig;
+  end
+
   switch mode(1)
   case 0
-    filename = sprintf([prefix '.eps'],fig);
+    filename = sprintf([prefix '.eps'],fig0);
     if length(mode) > 1
       print(fig,'-depsc2','-painters','-r300','-loose',filename);
     else
       print(fig,'-depsc2','-painters','-r300',filename);
     end
   case 1
-    filename = sprintf([prefix '.png'],fig);
+    filename = sprintf([prefix '.png'],fig0);
     print(fig,'-dpng',['-r' num2str(mode(2))],filename);  % painters, zbuffer, opengl???  what is correct?
   end
 %  fprintf('wrote %s.\n',filename);
 
   % restore
   set(fig,'PaperPositionMode',prev);
+  
+  % record
+  filenames{p} = [directory filesep filename];
 
 end
 
