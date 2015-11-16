@@ -121,8 +121,9 @@ for rr=1:length(trainfun)
         % then we have to modify model so that it averages across the
         % predicted response associated with each frame.  this is magical voodoo here.
         if size(trainstim,3) > 1
-          nums = repmat(size(trainstim,3),[1 size(trainstim,1)]);
-          model = @(pp,dd) chunkfun(feval(model,pp,squish(permute(dd,[3 1 2]),2)),nums,@(x) mean(x,1)).';
+%          nums = repmat(size(trainstim,3),[1 size(trainstim,1)]);
+          model = @(pp,dd) chunkfun(feval(model,pp,squish(permute(dd,[3 1 2]),2)), ...
+                                    repmat(size(dd,3),[1 size(dd,1)]),@(x) mean(x,1)).';
         end
 
         % figure out bounds to use
@@ -157,6 +158,9 @@ for rr=1:length(trainfun)
         else
           [params0,resnorm,residual,exitflag,output] = ...
             lsqcurvefit(@(x,y) double(nanreplace(feval(fun,x) / datastd,0,2)),seed(ix),[],double(traindataT),lb,ub,options);
+% L1:
+%           [params0,resnorm,residual,exitflag,output] = ...
+%             lsqnonlin(@(x) sqrt(abs((double(nanreplace(feval(fun,x) / datastd,0,2))-double(traindataT)))),seed(ix),lb,ub,options);
           params0 = copymatrix(seed,ix,params0);
         end
 
