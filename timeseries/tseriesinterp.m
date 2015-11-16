@@ -1,6 +1,6 @@
-function m = tseriesinterp(m,trorig,trnew,dim,numsamples)
+function m = tseriesinterp(m,trorig,trnew,dim,numsamples,fakeout)
 
-% function m = tseriesinterp(m,trorig,trnew,dim,numsamples)
+% function m = tseriesinterp(m,trorig,trnew,dim,numsamples,fakeout)
 %
 % <m> is a matrix with time-series data along some dimension.
 %   can also be a cell vector of things like that.
@@ -11,10 +11,16 @@ function m = tseriesinterp(m,trorig,trnew,dim,numsamples)
 % <numsamples> (optional) is the number of desired samples.
 %   default to the number of samples that makes the duration of the new
 %   data match or minimally exceed the duration of the original data.
+% <fakeout> (optional) is a duration in seconds.  If supplied, 
+%   we act as if the time-series data was delayed by <fakeout>,
+%   and we obtain time points that correspond to going back in time
+%   by <fakeout> seconds.  Default: 0.
 %
-% use interp1 to cubic-interpolate <m> (with extrapolation) such that
+% Use interp1 to cubic-interpolate <m> (with extrapolation) such that
 % the new version of <m> coincides with the original version of <m>
-% at the first time point.
+% at the first time point.  (If <fakeout> is used, the new version
+% of <m> is actually shifted by <fakeout> seconds earlier than the
+% original version of <m>.)
 %
 % example:
 % x0 = 0:.1:10;
@@ -33,6 +39,9 @@ if ~exist('dim','var') || isempty(dim)
 end
 if ~exist('numsamples','var') || isempty(numsamples)
   numsamples = [];
+end
+if ~exist('fakeout','var') || isempty(fakeout)
+  fakeout = 0;
 end
 
 % prep
@@ -57,7 +66,7 @@ for p=1:length(m)
 
   % do it
   timeorig = linspacefixeddiff(0,trorig,size(m{p},1));
-  timenew  = linspacefixeddiff(0,trnew,numsamples);
+  timenew  = linspacefixeddiff(0,trnew,numsamples) - fakeout;
 
   % do in chunks
   chunks = chunking(1:size(m{p},2),ceil(size(m{p},2)/numchunks));
