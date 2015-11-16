@@ -23,5 +23,5 @@ tempfile0 = [tempname '.mat'];
 
 % do it
 temp = cell2str(vars);
-cmd = sprintf('save(''%s'',%s); clear all; load ''%s'';',tempfile0,temp(3:end-2),tempfile0);
+cmd = sprintf('save ''%s'' %s; clear all; load ''%s'';',tempfile0,temp(3:end-2),tempfile0);
 evalin('caller',cmd);
