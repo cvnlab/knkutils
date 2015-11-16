@@ -100,6 +100,7 @@ indexing/
   chunking - split a vector into chunks
   firstel - return first element of a matrix
   firstelc - return first element of a cell matrix
+  indexall - return an indexing helper for cell vectors
   lastel - return last element of a matrix
   linspacecircular - get equally spaced points in a circular domain
   linspacefixeddiff - get equally spaced points given a fixed difference
@@ -387,6 +388,7 @@ imageprocessing/
   makegratings2d - make a set of 2D sinusoidal gratings
   makeimagestack - convert a 3D matrix containing multiple images into a 2D matrix
   makeimagestack_wrapper - run makeimagestack for multiple 3D matrices
+  makeimagestack3dfiles - like makeimagestack but write out some convenient .png files
   makeorientedgaussian2d - make an oriented 2D Gaussian
   makesquareimage - draw a square as an image
   maskmultiscalegaborfilters - modify results of applymultiscalegaborfilters according to a binary mask
@@ -429,6 +431,7 @@ figure/
   scatterimagesparse - do a image scatterplot and limit the number of points
   squarify - figure out a roughly evenly balanced number of rows and columns necessary to fit a certain number of elements
   straightline - draw horizontal or vertical lines
+  subplotresize - make the subplots of a figure as big as possible
 
 colormap/
   cmapang - hue-based colormap suitable for circular ranges (e.g. angles)
@@ -487,12 +490,15 @@ mri/
   evaldoublegamma - evaluate double-gamma function at some x-values
   expdesignefficiency - calculate efficiency of an experimental design
   fmriquality - write figures to inspect the spatial quality of fMRI volumes
+  fstoint - go from FreeSurfer space to our internal space
   getcanonicalhrf - return a canonical HRF (based on empirical data) for arbitrary duration and TR
   getsamplehrf - return some sample HRFs estimated from actual fMRI data
   homogenizevolumes - homogenize a set of 3D volumes by dividing by fitted 3D polynomials
+  inttofs - go from our internal space to FreeSurfer space
   motioncorrectvolumes - perform motion correction for some volumes
   preconditionvolume - precondition a 3D volume by clipping outliers and removing low-frequency signal variations
   settr_nii - set the TR in the header information of an NII structure
+  surfaceslice2 - figure out information relating voxels to vertices
   undistortvolumes - resample volumes in order to correct for motion and distortion
   write3dstack - write out extracted slices in three orientations from a 3D matrix
   writespmfiles - write a series of volumes to individual SPM/ANALYZE files
