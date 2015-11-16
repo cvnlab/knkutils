@@ -1,6 +1,6 @@
-function figurewrite(prefix,num,mode,outputdir,omitclose)
+function filenames = figurewrite(prefix,num,mode,outputdir,omitclose)
 
-% function figurewrite(prefix,num,mode,outputdir,omitclose)
+% function filenames = figurewrite(prefix,num,mode,outputdir,omitclose)
 %
 % <prefix> (optional) is the filename prefix.  the prefix can include in it
 %   '%d' (or a variant thereof) for the figure number.  you can pass in
@@ -16,6 +16,7 @@ function figurewrite(prefix,num,mode,outputdir,omitclose)
 %
 % print current figure to <prefix>.[png,eps] and then close figure.
 % can use in conjunction with figureprep.m.
+% return a cell vector of the files written.
 %
 % example:
 % figureprep;
@@ -48,11 +49,12 @@ if ~iscell(mode)
 end
 
 % do it
+filenames = {};
 for p=1:length(mode)
   if isempty(num)
-    printnice([],mode{p},outputdir,prefix);
+    filenames = [filenames printnice([],mode{p},outputdir,prefix)];
   else
-    printnice([],mode{p},outputdir,sprintf(prefix,num));
+    filenames = [filenames printnice([],mode{p},outputdir,sprintf(prefix,num))];
   end
 end
 if ~omitclose
