@@ -62,6 +62,11 @@ end
 % read it in
 f = double(imread(sprintf('%s.png',tmpfile)))/fct;
 
+% ensure grayscale
+if wantgray==1
+  f = f(:,:,1);
+end
+
 % restore position and visibility
 setfigurepos(pos);
 set(gcf,'Visible',prev);
