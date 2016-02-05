@@ -1,6 +1,6 @@
-function m = tseriesinterp(m,trorig,trnew,dim,numsamples,fakeout)
+function m = tseriesinterp(m,trorig,trnew,dim,numsamples,fakeout,wantreplicate)
 
-% function m = tseriesinterp(m,trorig,trnew,dim,numsamples,fakeout)
+% function m = tseriesinterp(m,trorig,trnew,dim,numsamples,fakeout,wantreplicate)
 %
 % <m> is a matrix with time-series data along some dimension.
 %   can also be a cell vector of things like that.
@@ -15,6 +15,10 @@ function m = tseriesinterp(m,trorig,trnew,dim,numsamples,fakeout)
 %   we act as if the time-series data was delayed by <fakeout>,
 %   and we obtain time points that correspond to going back in time
 %   by <fakeout> seconds.  Default: 0.
+% <wantreplicate> (optional) is whether to repeat the first and last
+%   data points 3 times (e.g. 1 1 1 1 2 3 4 ... ) before performing
+%   interpolation. The rationale is to try to avoid crazy extrapolation
+%   values.  Default: 0.
 %
 % Use interp1 to cubic-interpolate <m> (with extrapolation) such that
 % the new version of <m> coincides with the original version of <m>
@@ -43,6 +47,9 @@ end
 if ~exist('fakeout','var') || isempty(fakeout)
   fakeout = 0;
 end
+if ~exist('wantreplicate','var') || isempty(wantreplicate)
+  wantreplicate = 0;
+end
 
 % prep
 if iscell(m)
@@ -65,7 +72,11 @@ for p=1:length(m)
   end
 
   % do it
-  timeorig = linspacefixeddiff(0,trorig,size(m{p},1));
+  if wantreplicate
+    timeorig = [[-3 -2 -1]*trorig linspacefixeddiff(0,trorig,size(m{p},1)) [(size(m{p},1)-1)*trorig+[1 2 3]*trorig]];
+  else
+    timeorig = linspacefixeddiff(0,trorig,size(m{p},1));
+  end
   timenew  = linspacefixeddiff(0,trnew,numsamples) - fakeout;
 
   % do in chunks
@@ -73,7 +84,15 @@ for p=1:length(m)
   temp = {};
   mtemp = m{p};
   parfor q=1:length(chunks)
-    temp{q} = interp1(timeorig,mtemp(:,chunks{q}),timenew,'pchip','extrap');
+    if wantreplicate
+      temp{q} = interp1(timeorig, ...
+                        cat(1,repmat(mtemp(1,chunks{q}),[3 1]), ...
+                              mtemp(:,chunks{q}), ...
+                              repmat(mtemp(end,chunks{q}),[3 1])), ...
+                        timenew,'pchip','extrap');
+    else
+      temp{q} = interp1(timeorig,mtemp(:,chunks{q}),timenew,'pchip','extrap');
+    end
   end
   m{p} = catcell(2,temp);
   clear temp mtemp;
