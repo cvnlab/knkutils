@@ -1,7 +1,7 @@
-function [vols,paramsB] = motioncorrectvolumes(vols,volsize,figuredir,ref,cutoff,extratrans,skipreslice, ...
+function [vols,paramsB,refvol] = motioncorrectvolumes(vols,volsize,figuredir,ref,cutoff,extratrans,skipreslice, ...
   realignparams,resliceparams,binarymask,epiignoremcvol,dformat)
 
-% function [vols,paramsB] = motioncorrectvolumes(vols,volsize,figuredir,ref,cutoff,extratrans,skipreslice, ...
+% function [vols,paramsB,refvol] = motioncorrectvolumes(vols,volsize,figuredir,ref,cutoff,extratrans,skipreslice, ...
 %   realignparams,resliceparams,binarymask,epiignoremcvol,dformat)
 %
 % <vols> is
@@ -62,6 +62,7 @@ function [vols,paramsB] = motioncorrectvolumes(vols,volsize,figuredir,ref,cutoff
 % also, return <paramsB> which is a cell vector of matrices that are N+1 x 12.
 %   (the N can differ across cases.)  each matrix has the filtered motion 
 %   parameter estimates.
+% also, return <refvol> which is the 3D volume used as reference for motion correction.
 %
 % we perform coregistration by using routines from SPM (e.g. spm_realign).  note that for 
 % each time-series of volumes, voxels that move outside of the field-of-view will have 0s
@@ -78,6 +79,7 @@ function [vols,paramsB] = motioncorrectvolumes(vols,volsize,figuredir,ref,cutoff
 % see also coregistervolumes.m.
 %
 % history:
+% 2016/02/22 - add output <refvol>
 % 2011/04/13 - add input <epiignoremcvol>
 % 2011/03/25 - add input <binarymask>
 % 2011/03/15 - add inputs <realignparams> and <resliceparams>
