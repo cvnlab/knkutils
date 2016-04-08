@@ -1,6 +1,6 @@
-function [vols,brainmask,polymodel] = homogenizevolumes(vols,knobs,wantsingle)
+function [vols,brainmask,polymodel] = homogenizevolumes(vols,knobs,wantsingle,brainmask)
 
-% function [vols,brainmask] = homogenizevolumes(vols,knobs,wantsingle)
+% function [vols,brainmask] = homogenizevolumes(vols,knobs,wantsingle,brainmask)
 %
 % <vols> is a 4D volume (X x Y x Z x T) or a cell vector of 4D volumes.
 %   these volumes should be suitable for interpretation as double
@@ -10,6 +10,9 @@ function [vols,brainmask,polymodel] = homogenizevolumes(vols,knobs,wantsingle)
 %   the analysis.  see below for details.  default: [99 1/4 5 10].
 % <wantsingle> (optional) is whether you want to apply exactly the same 
 %   correction to all volumes.  default: 0.
+% <brainmask> (optional) is a direct specification of the "brain" voxels to use.
+%   should be X x Y x Z with 0/1 indicating the "brain" voxels.
+%   default is to use a intensity-based scheme (see below).
 %
 % first, we determine the "brain" voxels by selecting voxels in the 
 % mean volume (mean across all volumes) that are at least B of
@@ -52,6 +55,9 @@ end
 if ~exist('wantsingle','var') || isempty(wantsingle)
   wantsingle = 0;
 end
+if ~exist('brainmask','var') || isempty(brainmask)
+  brainmask = [];
+end
 isbare = ~iscell(vols);
 if isbare
   vols = {vols};
@@ -63,9 +69,15 @@ xyzsize = sizefull(vols{1},3);            % [X Y Z]
 numvoxels = prod(xyzsize);                % total number of voxels
 polydeg = knobs(3);                       % max poly degree to use
 polyfactor = knobs(4);                    % what is the maximum scaling factor to apply?
-highval = prctile(meanvol(:),knobs(1));   % what is a high signal intensity value?
-lowval = highval*knobs(2);                % what is a low value?
-brainmask = meanvol >= lowval;            % where are brain voxels?
+
+% calc brainmask
+if isempty(brainmask)
+  highval = prctile(meanvol(:),knobs(1));   % what is a high signal intensity value?
+  lowval = highval*knobs(2);                % what is a low value?
+  brainmask = meanvol >= lowval;            % where are brain voxels?
+else
+  brainmask = logical(brainmask);
+end
 
 % prepare volumes by dividing by a fitted polynomial
 pmatrix = constructpolynomialmatrix3d(xyzsize,1:numvoxels,polydeg);       % locs x basis (all voxels)
