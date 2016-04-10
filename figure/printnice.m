@@ -67,22 +67,16 @@ for p=1:length(figs)
   prev = get(fig,'PaperPositionMode');
   set(fig,'PaperPositionMode','auto');
 
-  if ~isa(fig,'double')
-    fig0 = fig.Number;
-  else
-    fig0 = fig;
-  end
-
   switch mode(1)
   case 0
-    filename = sprintf([prefix '.eps'],fig0);
+    filename = sprintf([prefix '.eps'],double(fig));  % the double casts fig when it is a class
     if length(mode) > 1
       print(fig,'-depsc2','-painters','-r300','-loose',filename);
     else
       print(fig,'-depsc2','-painters','-r300',filename);
     end
   case 1
-    filename = sprintf([prefix '.png'],fig0);
+    filename = sprintf([prefix '.png'],double(fig));  % the double casts fig when it is a class
     print(fig,'-dpng',['-r' num2str(mode(2))],filename);  % painters, zbuffer, opengl???  what is correct?
   end
 %  fprintf('wrote %s.\n',filename);
