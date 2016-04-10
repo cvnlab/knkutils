@@ -2,8 +2,15 @@ function [f,str] = constructpolynomialmatrix3d(matrixsize,locs,degree,weights)
 
 % function [f,str] = constructpolynomialmatrix3d(matrixsize,locs,degree,weights)
 %
-% <matrixsize> is a 3D matrix size like [100 50 100]
-% <locs> is a row or column vector of indices into that matrix size
+% <matrixsize> is a 3D matrix size like [100 50 100]. this is the matrix case.
+%   can also be a 2 x 3 matrix, indicating that you want the direct point-specification
+%   case.  in this case, the first row gives the minimum for each dimension, and the
+%   second row gives the maximum for each dimension.  these values are used to determine
+%   the range of the basis functions (see further details below).
+% <locs> is either:
+%   (1) a row (1 x V) or column (V x 1) vector of indices into 
+%       that matrix size [matrix case].
+%   (2) V x 3 with x-, y-, and z-coordinates [direct point-specification case].
 % <degree> is the maximum polynomial degree desired.  should be no greater than 10.
 % <weights> (optional) is a 1 x N vector of values. 
 %   if supplied, we automatically weight and sum the basis functions.
@@ -12,19 +19,23 @@ function [f,str] = constructpolynomialmatrix3d(matrixsize,locs,degree,weights)
 %   default is [] which means do nothing special.
 % 
 % if <weights> is not supplied, then:
-%   return <f>, a matrix of dimensions length(<locs>) x N
+%   return <f>, a matrix of dimensions V x N
 %   with polynomial basis functions evaluated at <locs> in
 %   the columns.  the polynomial basis functions are evaluated
-%   over the range [-1,1] which is presumed to correspond to
-%   the beginning and ending element along each of the three dimensions.
-%   (if a dimension has only one element, the values are all set to 1.)
+%   over the range [-1,1] which is presumed to correspond to either (1)
+%   the beginning and ending element along each of the three dimensions in the
+%   matrix case or (2) the ranges specified via the <matrixsize> input in the
+%   direct point-specification case (if points lie outside the ranges, the basis
+%   functions still get sane values, but you probably want to avoid this type of
+%   situation).  (if a dimension has only one element (or has only a single value), 
+%   the values are all set to 1.)
 %   also, return <str>, the algebraic expression that corresponds to
 %   the columns of <f>.  'x' refers to the first matrix dimension; 'y'
 %   refers to the second matrix dimension; 'z' refers to the third 
 %   matrix dimension.
 %
 % if <weights> is supplied, then:
-%   return <f>, a vector of dimensions length(<locs>) x 1 with the weighted
+%   return <f>, a vector of dimensions V x 1 with the weighted
 %   sum of the polynomial basis functions.  also, return <str>, a cell 
 %   vector of algebraic expressions describing the various basis functions.
 %
@@ -36,6 +47,7 @@ function [f,str] = constructpolynomialmatrix3d(matrixsize,locs,degree,weights)
 % see also constructpolynomialmatrix2d.m.
 %
 % history:
+% - 2016/04/10 - add support for the direct point-specification case.
 % - 2013/05/23 - hard code the basis expansion to ensure consistent results across platforms.
 %                this changes previous behavior.
 %
@@ -51,6 +63,9 @@ function [f,str] = constructpolynomialmatrix3d(matrixsize,locs,degree,weights)
 if ~exist('weights','var') || isempty(weights)
   weights = [];
 end
+
+% calc
+directcase = isequal(size(matrixsize),[2 3]);
 
 % prep
 x = sym('x');
@@ -86,8 +101,8 @@ otherwise
   die;
 end
 
-%REMOVE since hard-coded now
-%str = sort(strsplit(str,'+'));% sort the stuff in between + signs to try to ensure consistent ordering!!!
+  %REMOVE since hard-coded now
+  %str = sort(strsplit(str,'+'));% sort the stuff in between + signs to try to ensure consistent ordering!!!
 str = strsplit(str,'+');
 str = cat(1,str,repmat({'+'},[1 length(str)]));
 str = cat(2,str{:});
@@ -110,15 +125,36 @@ str0 = strrep(str,' 1 ',' ones(size(x)) '); assert(length(str0) ~= length(str));
 str = str0;
 
 % prep the linear coordinates
-[x,y,z] = ind2sub(matrixsize,locs(:));
-if matrixsize(1)~=1
-  x = normalizerange(x,-1,1,1,matrixsize(1));
-end
-if matrixsize(2)~=1
-  y = normalizerange(y,-1,1,1,matrixsize(2));
-end
-if matrixsize(3)~=1
-  z = normalizerange(z,-1,1,1,matrixsize(3));
+if directcase
+  x = locs(:,1);
+  y = locs(:,2);
+  z = locs(:,3);
+  if diff(matrixsize(:,1))==0
+    x(:) = 1;
+  else
+    x = normalizerange(x,-1,1,matrixsize(1,1),matrixsize(2,1),0);  % NOTE: no chop
+  end
+  if diff(matrixsize(:,2))==0
+    y(:) = 1;
+  else
+    y = normalizerange(y,-1,1,matrixsize(1,2),matrixsize(2,2),0);  % NOTE: no chop
+  end
+  if diff(matrixsize(:,3))==0
+    z(:) = 1;
+  else
+    z = normalizerange(z,-1,1,matrixsize(1,3),matrixsize(2,3),0);  % NOTE: no chop
+  end
+else
+  [x,y,z] = ind2sub(matrixsize,locs(:));
+  if matrixsize(1)~=1
+    x = normalizerange(x,-1,1,1,matrixsize(1));
+  end
+  if matrixsize(2)~=1
+    y = normalizerange(y,-1,1,1,matrixsize(2));
+  end
+  if matrixsize(3)~=1
+    z = normalizerange(z,-1,1,1,matrixsize(3));
+  end
 end
 
 % handle regular case
