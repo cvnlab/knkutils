@@ -74,7 +74,7 @@ else
   if isempty(images)
     sz = [];
   else
-    sz = size(images);
+    sz = sizefull(images,4);  % fully qualified up to 4 for safety
   end
   
   % finish up
