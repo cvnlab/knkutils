@@ -1,6 +1,6 @@
-function m = tseriesinterp(m,trorig,trnew,dim,numsamples,fakeout,wantreplicate)
+function m = tseriesinterp(m,trorig,trnew,dim,numsamples,fakeout,wantreplicate,interpmethod)
 
-% function m = tseriesinterp(m,trorig,trnew,dim,numsamples,fakeout,wantreplicate)
+% function m = tseriesinterp(m,trorig,trnew,dim,numsamples,fakeout,wantreplicate,interpmethod)
 %
 % <m> is a matrix with time-series data along some dimension.
 %   can also be a cell vector of things like that.
@@ -19,12 +19,17 @@ function m = tseriesinterp(m,trorig,trnew,dim,numsamples,fakeout,wantreplicate)
 %   data points 3 times (e.g. 1 1 1 1 2 3 4 ... ) before performing
 %   interpolation. The rationale is to try to avoid crazy extrapolation
 %   values.  Default: 0.
+% <interpmethod> (optional) is the interpolation method, like 'pchip'.
+%   Default: 'pchip'.
 %
-% Use interp1 to cubic-interpolate <m> (with extrapolation) such that
+% Use interp1 to interpolate <m> (with extrapolation) such that
 % the new version of <m> coincides with the original version of <m>
 % at the first time point.  (If <fakeout> is used, the new version
 % of <m> is actually shifted by <fakeout> seconds earlier than the
 % original version of <m>.)
+%
+% Note that <m> can be complex-valued; the real and imaginary parts
+% are separately analyzed. This inherits from interp1's behavior.
 %
 % example:
 % x0 = 0:.1:10;
@@ -33,6 +38,15 @@ function m = tseriesinterp(m,trorig,trnew,dim,numsamples,fakeout,wantreplicate)
 % figure; hold on;
 % plot(x0,y0,'r.-');
 % plot(0:.23:.23*(length(y1)-1),y1,'go');
+%
+% another example (complex data):
+% x = (rand(1,100)*2*pi)/4 + pi;
+% x2 = ang2complex(x);
+% y = tseriesinterp(x2,1,.1,[],[],[],1);
+% y2 = mod(angle(y),2*pi);
+% figure; hold on;
+% plot(1:length(x),x,'ro');
+% plot(linspacefixeddiff(1,.1,length(y2)),y2,'b-');
 
 % internal constants
 numchunks = 20;
@@ -49,6 +63,9 @@ if ~exist('fakeout','var') || isempty(fakeout)
 end
 if ~exist('wantreplicate','var') || isempty(wantreplicate)
   wantreplicate = 0;
+end
+if ~exist('interpmethod','var') || isempty(interpmethod)
+  interpmethod = 'pchip';
 end
 
 % prep
@@ -89,9 +106,9 @@ for p=1:length(m)
                         cat(1,repmat(mtemp(1,chunks{q}),[3 1]), ...
                               mtemp(:,chunks{q}), ...
                               repmat(mtemp(end,chunks{q}),[3 1])), ...
-                        timenew,'pchip','extrap');
+                        timenew,interpmethod,'extrap');
     else
-      temp{q} = interp1(timeorig,mtemp(:,chunks{q}),timenew,'pchip','extrap');
+      temp{q} = interp1(timeorig,mtemp(:,chunks{q}),timenew,interpmethod,'extrap');
     end
   end
   m{p} = catcell(2,temp);
