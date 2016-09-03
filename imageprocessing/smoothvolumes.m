@@ -15,6 +15,9 @@ function [vols,flt] = smoothvolumes(vols,volsize,fwhm)
 %
 % we also return the filter in <flt>.  the values sum to 1.
 %
+% it appears that this function is compatible with integer data formats
+% as well as complex-valued data.
+%
 % history:
 % 2011/08/23 - now return <flt>
 % 2011/03/08 - handle NaNs intelligently now. this changes old behavior.
