@@ -1,12 +1,14 @@
 function [timeframes,timekeys,digitrecord,trialoffsets] = ...
   ptviewmovie(images,frameorder,framecolor,frameduration,fixationorder,fixationcolor,fixationsize, ...
               grayval,detectinput,wantcheck,offset,moviemask,movieflip,scfactor,allowforceglitch, ...
-              triggerfun,framefiles,frameskip,triggerkey,specialcon,trialtask,maskimages,specialoverlay)
+              triggerfun,framefiles,frameskip,triggerkey,specialcon,trialtask,maskimages,specialoverlay, ...
+              frameevents,framefuncs,setupscript,cleanupscript)
 
 % function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   ptviewmovie(images,frameorder,framecolor,frameduration,fixationorder,fixationcolor,fixationsize, ...
 %               grayval,detectinput,wantcheck,offset,moviemask,movieflip,scfactor,allowforceglitch, ...
-%               triggerfun,framefiles,frameskip,triggerkey,specialcon,trialtask,maskimages,specialoverlay)
+%               triggerfun,framefiles,frameskip,triggerkey,specialcon,trialtask,maskimages,specialoverlay, ...
+%               frameevents,framefuncs,setupscript,cleanupscript)
 % 
 % <images> is a .mat file with 'images' as a uint8
 %   A x B x 1/3 x N matrix with different images along the fourth dimension.  
@@ -236,7 +238,17 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 % <specialoverlay> (optional) is a uint8 image matrix with four channels along the third
 %   dimension (the last gives the alpha channel).  if supplied, this is an image that gets
 %   drawn on top of the stimulus but below the fixation.
-%
+% <frameevents> (optional) is either [] which means do nothing or a vector of non-negative
+%   integers corresponding to the frames of <frameorder>.  0 means do nothing on that frame.
+%   positive integers are indices into <framefuncs>; the appropriate entry is evaluated
+%   when that frame is reached.  Default: [].
+% <framefuncs> (optional) is a cell vector of entries.  the number of entries should be
+%   consistent with <frameevents>.  each entry should be a string or a function handle
+%   that can be evaluated.  Default: [].
+% <setupscript> (optional) is a string or a function handle that is evaluated before the
+%   experiment starts.  Default: [].
+% <cleanupscript> (optional) is a string or a function handle that is evaluated after the
+%   experiment ends.  Default: [].
 % return <timeframes> as a 1 x size(<frameorder>,2) vector with the time of each frame showing.
 %   (time is relative to the time of the first frame.)
 % return <timekeys> as a record of the input detected.  the format is {(time button;)*}.
@@ -287,6 +299,8 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   So it is important to test your particular setup!
 %
 % history:
+% 2015/11/09 - add cleanupscript as input
+% 2015/09/30 - add frameevents,framefuncs,setupscript as inputs.
 % 2015/03/23 - oops. fix bug in the circshifting introduced by the previous checkin.
 % 2015/01/25 - fill gray is now whole screen; new implementation of the circshifting;
 %              movierect defined right before use
@@ -396,6 +410,18 @@ if ~exist('maskimages','var') || isempty(maskimages)
 end
 if ~exist('specialoverlay','var') || isempty(specialoverlay)
   specialoverlay = [];
+end
+if ~exist('frameevents','var') || isempty(frameevents)
+  frameevents = [];
+end
+if ~exist('framefuncs','var') || isempty(framefuncs)
+  framefuncs = [];
+end
+if ~exist('setupscript','var') || isempty(setupscript)
+  setupscript = [];
+end
+if ~exist('cleanupscript','var') || isempty(cleanupscript)
+  cleanupscript = [];
 end
 if ischar(images)
   images = {images};
@@ -907,6 +933,15 @@ if ~isempty(specialcon)
 end
 Screen('Flip',win);
 
+% do setup if necessary
+if ~isempty(setupscript)
+  if ischar(setupscript)
+    evalin('caller',setupscript);
+  else
+    feval(setupscript);
+  end
+end
+
 % wait for a key press to start
 fprintf('press a key to begin the movie. (make sure to turn off network, energy saver, spotlight, software updates! mirror mode on!)\n');
 safemode = 0;
@@ -1147,6 +1182,20 @@ for frame=1:frameskip:size(frameorder,2)+1
     % if we are in the initial case OR if we have hit the when time, then display the frame
     if when == 0 | GetSecs >= when
   
+      % right before we issue the flip command, deal with frameevents.
+      % hopefully the frameevent doesn't slow us down.
+      if ~isempty(frameevents)
+        if frameevents(frame0)==0
+        else
+          temp = framefuncs{frameevents(frame0)};
+          if ischar(temp)
+            evalin('caller',temp);
+          else
+            feval(temp);
+          end
+        end
+      end
+  
       % issue the flip command and record the empirical time
       [VBLTimestamp,StimulusOnsetTime,FlipTimestamp,Missed,Beampos] = Screen('Flip',win,when);
 %      sound(sin(1:2000),100);
@@ -1272,6 +1321,15 @@ fprintf('frames per second: %.10f\n',length(timeframes)/dur);
 
 % prepare output
 digitrecord = {digitrecord digitframe digitpolarity};
+
+% do cleanup if necessary
+if ~isempty(cleanupscript)
+  if ischar(cleanupscript)
+    evalin('caller',cleanupscript);
+  else
+    feval(cleanupscript);
+  end
+end
 
 % do some checks
 if wantcheck
