@@ -4,6 +4,9 @@ function [newvols,voloffset,validvol] = undistortvolumes(vols,volsize,pixelshift
 %
 % <vols> is one or more 3D volumes concatenated along the fourth dimension.
 %   the number of volumes is N.  it is okay if <vols> is int16.
+%   it is also okay if <vols> are phase angles provided as complex numbers 
+%   (any scale (distance from origin) is fine).  any format for the phase angles
+%   is fine, as we convert to double anyway when computing on them.
 % <volsize> is a 3-element vector with the size of each voxel in mm
 % <pixelshifts> is a 3D volume with the number of pixel shifts that the magnetic 
 %   field caused.  the dimensions of <pixelshifts> should match the volumes in 
@@ -49,6 +52,10 @@ function [newvols,voloffset,validvol] = undistortvolumes(vols,volsize,pixelshift
 % which voxels would have had no NaNs in their time-series if we didn't do the 
 % int16 conversion.
 %
+% note that in the case that <vols> are phase angles, the format of the returned volumes
+% is complex int16 with unit-length complex numbers scaled by 10000. (we force the
+% interpolated phase angles to lie equidistant from the origin.)
+%
 % the <voloffset> output is a 3-element vector of non-negative integers indicating
 % the offset relative to the original volume.  when <targetres> is [] or [X Y Z] or
 % {[A B C] [D E F] 0}, <voloffset> is always returned as [0 0 0].  it is only when <targetres> 
@@ -63,6 +70,7 @@ function [newvols,voloffset,validvol] = undistortvolumes(vols,volsize,pixelshift
 % we use parfor to speed up execution.
 %
 % history:
+% 2016/05/02 - add support for <vols> being complex
 % 2014/09/16 - allow <extratrans> to be the {X} case
 % 2011/03/19 - final polishing of recent changes.  these included: switch to ba_interp3; use ba_interp3 for forward distortion; new output validvol; explicit on data format issues; more flexible input; int16 for the output
 % 2011/03/16 - allow <pixelshifts> to be 4D
@@ -161,7 +169,7 @@ if ~isempty(mcparams)
   end
   
   % do it
-  newvols = zeros([size(vols,4) targetres],'int16');
+  newvols = zeros([size(vols,4) targetres],'int16');  % may be complex
   validvol = true(targetres);
   parfor p=1:size(mcparams,1)
 %     stimeB = clock;
@@ -171,8 +179,11 @@ if ~isempty(mcparams)
     coordsB = computeforwarddistortion(computeforwardmotion(inv(extratrans)*coords,spmt,mcparams(p,:)),pixelshifts(:,:,:,wh),phasedir);
 
     % resample the volume
-    temp = reshape(ba_interp3_wrapper(vols(:,:,:,p),coordsB),targetres);
+    temp = reshape(ba_interp3_wrapper(vols(:,:,:,p),coordsB),targetres);  % in phase angle case: complex input, complex output
     validvol = validvol & ~isnan(temp);  % it must be the case that the value in the new volume is not nan
+    if ~isreal(temp)
+      temp = int16(ang2complex(angle(temp))*10000);  % in the phase angle case, we have to revert back to true unit-circle angles
+    end
     newvols(p,:,:,:) = temp;
 
 %     % report
@@ -216,7 +227,7 @@ else
   end
 
   % resample the volumes
-  newvols = zeros([size(vols,4) targetres],'int16');
+  newvols = zeros([size(vols,4) targetres],'int16');  % may be complex
   validvol = true(targetres);
   parfor p=1:size(vols,4)
 %     stimeB = clock;
@@ -227,6 +238,9 @@ else
     end
     temp = reshape(ba_interp3_wrapper(vols(:,:,:,p),coordsB),targetres);
     validvol = validvol & ~isnan(temp);  % it must be the case that the value in the new volume is not nan
+    if ~isreal(temp)
+      temp = int16(ang2complex(angle(temp))*10000);  % in the phase angle case, we have to revert back to true unit-circle angles
+    end
     newvols(p,:,:,:) = temp;
 %     fprintf('(volume %d took %.1f min) ',p,etime(clock,stimeB)/60);
   end
