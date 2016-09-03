@@ -7,6 +7,8 @@ function f = getsamplebrain(n)
 %   2 means 256 x 256 x 16 (0.75 mm x 0.75 mm x 3 mm) with values in [0,3]
 %   3 means 240 x 276 x 240 (1-mm isotropic) with values in [0,500]
 %   4 means 64 x 64 x 20 x 50 (2.5-mm isotropic, 1337.702 ms TR) with values in [0,3000]
+%   5 means 162 x 200 x 84 (0.8-mm isotropic, magnitude) with values in [-25,1616]
+%   6 means 162 x 200 x 84 (0.8-mm isotropic, phase) with values in [0,4096) (convert by multiplying by (2*pi)/4096)
 %   default: 1.
 %
 % history:
