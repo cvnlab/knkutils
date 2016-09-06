@@ -49,7 +49,12 @@ for p=1:length(files)
   end
 
   % call "which"
-  filewhich = which(filename,'-all');
+  try
+    filewhich = which(filename,'-all');
+  catch me
+    fprintf('ERROR when trying this file: %s\n',filename);
+    continue;
+  end
   if isempty(filewhich)
     fprintf(1,[' weird, could not "which" on ',filename,'\n']);
   else
