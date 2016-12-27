@@ -222,3 +222,7 @@ end
 
 % return
 f = ball;
+
+% report
+fprintf('mn = %s\n',mat2str(mn));
+fprintf('sd = %s\n',mat2str(sd));
