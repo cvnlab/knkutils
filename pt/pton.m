@@ -80,6 +80,8 @@ else
   rect = CenterRect(round([0 0 rect(3)*winsize rect(4)*winsize]),rect);  % construct new size
 end
 [win,rect] = Screen('OpenWindow',screennum,127,rect);
+  % STEREO MODE:
+  %[win,rect] = Screen('OpenWindow',screennum,127,rect,[],[],4);
 
 % record the current clut
 oldclut = Screen('ReadNormalizedGammaTable',win);
