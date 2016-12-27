@@ -18,6 +18,8 @@ function [params,R2] = fitline2derror(x,y,params0,expt)
 % in this case, the optimal line is a perfectly vertical line,
 % and the returned parameters may take on wacky values.
 %
+% see also the concepts "Deming regression" and "orthogonal regression".
+%
 % return:
 %  <params> is [A B] where the model is A*x+B
 %  <R2> is the R^2 between fitted and actual values (see calccod.m).
@@ -55,7 +57,7 @@ if ~exist('expt','var') || isempty(expt)
 end
 
 % define options
-options = optimset('Display','off','FunValCheck','on','MaxFunEvals',Inf,'MaxIter',Inf,'TolFun',1e-6,'TolX',1e-6);
+options = optimset('Display','iter','FunValCheck','on','MaxFunEvals',Inf,'MaxIter',Inf,'TolFun',1e-6,'TolX',1e-6);
 
 % define seed
 if isempty(params0)
