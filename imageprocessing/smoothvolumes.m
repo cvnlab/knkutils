@@ -1,47 +1,90 @@
-function [vols,flt] = smoothvolumes(vols,volsize,fwhm)
+function [vols,flt] = smoothvolumes(vols,volsize,fwhm,mode)
 
-% function [vols,flt] = smoothvolumes(vols,volsize,fwhm)
+% function [vols,flt] = smoothvolumes(vols,volsize,fwhm,mode)
 %
 % <vols> are one or more 3D volumes concatenated along the fourth dimension
 %   or a cell vector of things like that.
 % <volsize> is a 3-element vector with the voxel size
 % <fwhm> is a 3-element vector with the desired FWHM of a Gaussian filter
+% <mode> (optional) is
+%   0 means default behavior
+%   1 means interpret <fwhm> as actually the desired voxel size and use
+%     an ideal Fourier filter (constructbutterfilter3D.m with 10th order)
+%     to achieve that result.
+%   Default: 0.
 %
+% There are two modes.
+%
+% <mode>==0:
 % smooth <vols> using a Gaussian filter (values below 0.01 are zeroed out).
 % we perform the filtering using imfilter and the 'replicate' option.
 % also, we handle NaNs intelligently by not allowing them to enter the 
 % filtering operation.  however, voxels that are originally NaN are forced
-% to be NaN in the output.
-%
-% we also return the filter in <flt>.  the values sum to 1.
-%
+% to be NaN in the output.  we also return the filter in <flt>; the values sum to 1.
 % it appears that this function is compatible with integer data formats
 % as well as complex-valued data.
 %
+% <mode>==1:
+% smooth <vols> using an ideal Fourier filter. <flt> is returned as [].
+% beware of wraparound issues; you may want to use padarray before 
+% calling this function!!
+%
 % history:
+% 2016/12/27 - implement <mode>==1 (ideal Fourier filtering to achieve a desired voxel size)
 % 2011/08/23 - now return <flt>
 % 2011/03/08 - handle NaNs intelligently now. this changes old behavior.
 %
-% example:
+% example 1:
 % a = getsamplebrain;
 % a(rand(size(a))>.9) = NaN;
 % a2 = smoothvolumes(a,[2.5 2.5 2.5],[5 5 5]);
 % figure; imagesc(makeimagestack(a));
 % figure; imagesc(makeimagestack(a2));
+% 
+% example 2:
+% a = getsamplebrain;
+% a2 = smoothvolumes(a,[2.5 2.5 2.5],[5 5 5]);
+% a3 = smoothvolumes(a,[2.5 2.5 2.5],[5 5 5],1);
+% figure; imagesc(makeimagestack(a));  colormap(gray); axis equal tight;
+% figure; imagesc(makeimagestack(a2)); colormap(gray); axis equal tight;
+% figure; imagesc(makeimagestack(a3)); colormap(gray); axis equal tight;
 
-% otherwise, do the normal case
-sd = (fwhm ./ volsize)/(2*sqrt(2*log(2)));  % first convert to matrix units, then to standard deviations
-flt = l1unitlength(constructsmoothingfilter(sd,0.01));
-if iscell(vols)
-  for zz=1:length(vols)
-    for p=1:size(vols{zz},4)
-      vols{zz}(:,:,:,p) = smoothvolumes_helper(vols{zz}(:,:,:,p),flt);
+% internal constants
+order = 10;
+
+% inputs
+if ~exist('mode','var') || isempty(mode)
+  mode = 0;
+end
+
+% case 1
+if isequal(mode,0)
+  sd = (fwhm ./ volsize)/(2*sqrt(2*log(2)));  % first convert to matrix units, then to standard deviations
+  flt = l1unitlength(constructsmoothingfilter(sd,0.01));
+  if iscell(vols)
+    for zz=1:length(vols)
+      for p=1:size(vols{zz},4)
+        vols{zz}(:,:,:,p) = smoothvolumes_helper(vols{zz}(:,:,:,p),flt);
+      end
+    end
+  else
+    for p=1:size(vols,4)
+      vols(:,:,:,p) = smoothvolumes_helper(vols(:,:,:,p),flt);
     end
   end
+
+% case 2
 else
-  for p=1:size(vols,4)
-    vols(:,:,:,p) = smoothvolumes_helper(vols(:,:,:,p),flt);
+  if iscell(vols)
+    for zz=1:length(vols)
+      flt = constructbutterfilter3D(sizefull(vols{zz},3),{volsize fwhm},order);
+      vols{zz} = imagefilter3D(vols{zz},flt);
+    end
+  else
+    flt = constructbutterfilter3D(sizefull(vols,3),{volsize fwhm},order);
+    vols = imagefilter3D(vols,flt);
   end
+  flt = [];
 end
 
 %%%%%
