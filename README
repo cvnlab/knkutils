@@ -338,13 +338,15 @@ imageprocessing/
   calcamplitudespectrum - calculate a smooth function relating spatial frequency to amplitude
   calccpfov - return number of cycles per FOV associated with fft2 after fftshifting
   calccpfov1D - return number of cycles per FOV associated with fft after fftshifting
+  calccpfov3D - return number of cycles per FOV associated with fftn (in three dimensions) after fftshifting
   calcimagecoordinates - return coordinates of the pixels of an image
   calcpositiondifferentfov - determine the coordinates of a new image with respect to an original image
   calcunitcoordinates - return coordinates of points equally spaced within the square bounded by -.5 and .5
   checkimagesize - inspect pixel dimensions of a batch of image files
   chtoim - reshape image(s) from images x res*res to res x res x images
   concatimages - concatenate multiple images together
-  constructbutterfilter - construct a Fourier-domain Butterworth filter
+  constructbutterfilter - construct a Fourier-domain Butterworth filter (for images)
+  constructbutterfilter3D - construct a Fourier-domain Butterworth filter (for volumes)
   constructcosinefilter - construct a Fourier-domain cosine-tapered filter
   constructorientationfilter - construct a Fourier-domain orientation filter (von Mises distribution)
   constructsmoothingfilter - construct a space-domain 2D or 3D Gaussian filter
@@ -370,6 +372,7 @@ imageprocessing/
   getsampleimage - return a 500x500 grayscale natural image
   ifftshift2 - apply ifftshift along the first two dimensions
   imagefilter - filter images with a Fourier-defined magnitude-based filter
+  imagefilter3D - filter volumes with a Fourier-defined magnitude-based filter
   imagesearch - search through image space to minimize some cost function
   imagesequencetomovie - make a QT movie from images
   imreadmulti - load in multiple images
