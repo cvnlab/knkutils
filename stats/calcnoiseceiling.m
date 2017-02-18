@@ -93,7 +93,7 @@ overallvar = var(mn,[],2);  % cases x 1
 signalstd = sqrt(posrect(overallvar-noisevar));  % cases x 1
 
 % perform Monte Carlo simulations
-dist = zeros(ncases,n1,n2);
+dist = zeros(ncases,n2,n1);
 fprintf('calculating noise ceiling');
 parfor x=1:n1
   statusdots(x,n1);
@@ -109,10 +109,13 @@ parfor x=1:n1
   measurement = bsxfun(@plus,signal,noise);
 
   % then calculate the metric between the true signal and the measurement (cases x 1 x n2)
-  dist(:,x,:) = feval(metric,repmat(signal,[1 1 n2]),measurement);
+  dist(:,:,x) = permute(feval(metric,repmat(signal,[1 1 n2]),measurement),[1 3 2]);
 
 end
 fprintf('done.\n');
+
+% re-order
+dist = permute(dist,[1 3 2]);  % now: ncases x n1 x n2
 
 % return
 dist = reshape(dist,ncases,n1*n2);
