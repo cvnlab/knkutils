@@ -53,6 +53,7 @@ function [f,mn,sd] = defineellipse3d(m,autocontrast,wantfit,mn,sd)
 % [f,mn,sd] = defineellipse3d(vol);
 %
 % history:
+% 2017/07/25 - report instructions to screen
 % 2011/03/09 - show max 25 slices
 % 2010/10/16 - implement mn and sd inputs
 % 2010/10/02 - change initial visualization state
@@ -111,6 +112,15 @@ mmn = min(m(:));
 mrng = mmx-mmn;
 mmx = mmx + mrng/2;
 mmn = mmn - mrng/2;
+
+% report some instructions:
+fprintf('ws,ad,qe control decrementing and incrementing the mean along each dimension.\n');
+fprintf('ik,jl,uo control decrementing and incrementing the std dev along each dimension.\n');
+fprintf(''' toggles between various visualization modes.\n');
+fprintf('- decreases the step size.\n');
+fprintf('= increases the step size.\n');
+fprintf('0 resets the position and size to a default value.\n');
+fprintf('ESC quits.\n');
 
 % do it
 figure;
