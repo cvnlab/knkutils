@@ -478,6 +478,7 @@ graphic/
   renderfigure - render the current figure into an image (assumed to be square)
   xyzscale - construct a scaling transformation matrix
   xyztranslate - construct a translating transformation matrix
+  xyzrotate_* - construct a rotation transformation matrix
 
 mri/
   calchrfpeak - estimate the peak (positive or negative) value of an HRF
