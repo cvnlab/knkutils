@@ -38,7 +38,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 %                [53 54] or [56 57 58] or [59 60 61] or [62 63 64 65] or [66] or [109 110] or [67 68 69 70 71 72] or
 %                [73 74 75 76 77] or [78 79 80 81] or [82 83 84 85 86 87  88] or [89 90 91 92 93 94] or 
 %                [95 96 97 98 99 100] or [101 102 103 104 105 106] or [107] or [108 112 113 114] or [111] or [115] or 
-%                [116] or [117] or [118]
+%                [116] or [117] or [118] or [119]
 % <setnum> (optional) is
 %   1 means the original 31 stimulus classes [15 frames, 3s / 3s]
 %   2 means the horizontally-modulated random space stimuli plus small-scale checkerboard and letters [15 frames, 3s / 3s]
@@ -159,6 +159,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 %   116 is readingE
 %   117 is categoryC11.  <dres> should be [].
 %   118 is wnC10.
+%   119 is retinotopyECOG
 %   default: 1.
 % <isseq> (optional) is whether to do the special sequential showing case.  should be either 0 which
 %   means do nothing special, or a positive integer indicating which frame to use.  if a positive
@@ -183,11 +184,11 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 % <framefiles> (optional) is the input to ptviewmovie.m
 % <trialparams> (optional) is the {B E F G H} of the <trialtask> inputs
 %   to ptviewmovie.m.  specify when <setnum> is 51 or 52 or 53 or 54 or 56,57,58, 59,60,61, 
-%   62,63,64,65, 66,109,110, 78,79, 113,114,115
+%   62,63,64,65, 66,109,110, 78,79, 113,114,115, 119
 % <eyelinkfile> (optional) is the .edf file to save eyetracker data to.
 %   default is [] which means to do not attempt to use the Eyelink.
 % <maskimages> (optional) is a speed-up (no dependencies).  <maskimages> is applicable and can be reused only
-%   if <setnum> stays within [73 74 75 76 77] or [78 79] or [89 90 91 92 93 94] or [101 102 103 104 105 106].
+%   if <setnum> stays within [73 74 75 76 77] or [78 79] or [89 90 91 92 93 94] or [101 102 103 104 105 106] or [119]
 % <specialoverlay> (optional) is the input to ptviewmovie.m
 % <stimulusdir> (optional) is the directory that contains the stimulus .mat files.
 %   default to the parent directory of showmulticlass.m.
@@ -199,6 +200,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 % show the stimulus and then save workspace (except the variable 'images') to <outfile>.
 %
 % history:
+% 2017/07/10 - implement 119
 % 2016/06/08 - implement 117
 % 2016/06/05 - implement 116
 % 2015/11/19 - implement 113 (update), 114, 115
@@ -301,6 +303,9 @@ case {116}
   stimfile = fullfile(stimulusdir,'workspace_readingE.mat');
 case {115}
   stimfile = fullfile(stimulusdir,'workspace_readingDoutline.mat');
+case {119}
+  stimfile = fullfile(stimulusdir,'workspace_retinotopyCaltsmashCOLORWORDS.mat');
+  maskfile = fullfile(stimulusdir,'workspace_retinotopyECOG.mat');
 case {67 68 69 70 71 72}
   stimfile = fullfile(stimulusdir,'workspace_categoryC9.mat');
 case {59 60 61}
@@ -432,7 +437,12 @@ end
 if ~exist('images','var') || isempty(images)
 
   % load images
-  load(stimfile,'images','maskimages');
+  if exist('maskfile','var')
+    load(stimfile,'images');
+    load(maskfile,'maskimages');
+  else
+    load(stimfile,'images','maskimages');
+  end
   if ~exist('maskimages','var')
     maskimages = {};
   end
@@ -1367,7 +1377,7 @@ else
         framedesign{p} = stimrec(mod2(setnum(2),9),p)*ones(1,9);
       end
     end
-  case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106}
+  case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119}
     % N/A
   end
 end
@@ -1482,7 +1492,7 @@ if isseq
   case {45}
     trialpattern = eye(30);
     onpattern = [1];
-  case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106}
+  case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119}
     % N/A
   end
 else
@@ -1694,7 +1704,7 @@ else
     load(infofile_version2,'trialpattern','onpattern');
   case 9
     load(infofile_hrf,'trialpattern','onpattern');
-  case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106}
+  case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119}
     % N/A
   end
 end
@@ -1916,7 +1926,7 @@ else
     classorder = [51:69 72:73];
   case 9
     classorder = [1];
-  case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106}
+  case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119}
     % N/A but do this just so the below line won't fail
     classorder = [];
   end
@@ -2238,6 +2248,20 @@ case {94 102 104 106}
   frameorder(1,22*15 + 6*32*15 + (1:2*32*15)) = mashgapcycles;
   frameorder(2,22*15 + 6*32*15 + (1:2*32*15)) = copymatrix(32*15 + reversegapcycles,reversegapcycles==0,0);
 
+case {119}
+
+  % init
+  frameorder = zeros(2,10*(5 + 61*5 + 5));  % 10 frames a second; 5-s blank + 61*5=305 1-s trals + 5-s blank
+
+  % calc
+  % mat2str(permutedim(repmat(1:61,[1 5])))
+  stimtrialorder = [27 28 45 18 32 5 4 33 51 7 18 10 20 13 14 16 55 23 24 15 56 21 41 52 52 57 15 6 36 34 61 3 19 31 6 49 55 52 1 43 50 59 32 27 57 4 59 15 30 22 40 8 39 58 36 39 31 19 17 54 51 29 37 38 7 4 26 13 24 26 36 40 14 49 42 23 33 47 22 10 41 11 46 27 35 60 25 49 34 48 35 60 20 27 37 22 3 43 23 45 25 40 42 34 1 58 4 44 54 3 26 12 15 16 3 39 30 25 56 28 11 18 57 18 48 20 61 28 11 2 44 46 59 10 23 58 54 57 30 22 32 36 50 58 55 17 47 12 46 13 26 41 37 3 42 50 38 5 46 59 14 58 40 8 53 51 53 12 47 44 7 31 9 53 17 32 49 41 42 8 14 1 38 52 4 30 2 53 24 35 57 54 19 9 56 44 8 19 39 51 2 10 39 50 15 16 29 60 46 60 48 44 32 11 21 10 41 43 53 24 14 37 56 22 2 43 42 20 16 11 12 25 27 2 6 38 23 13 1 6 9 51 45 49 47 60 6 61 26 52 40 29 34 8 55 29 35 48 43 59 7 31 21 47 54 7 45 19 5 16 33 33 5 28 12 56 38 36 37 30 29 28 34 9 33 25 61 18 45 21 17 1 17 55 24 31 61 50 5 9 13 48 21 35 20];
+  
+  for zz=1:length(stimtrialorder)
+    frameorder(1,10*5 + 10*(zz-1) + (1:5)) = randintrange(1,100,[1 5],1);        % 5 stimulus frames at 10-Hz
+    frameorder(2,10*5 + 10*(zz-1) + (1:5)) = repmat(stimtrialorder(zz),[1 5]);
+  end
+
 otherwise  % this is the normal case
   framedesign0 = framedesign;  % just a temporary copy for convenience
   frameorder = zeros(3,0);
@@ -2459,7 +2483,7 @@ end
 
 % figure out trialtask [i.e. for the red dot task, for the black-dot synchronization]
 switch setnum(1)
-case {51 52 53 54 56 57 58 59 60 61 62 63 64 65 66 109 110 113 114 115}
+case {51 52 53 54 56 57 58 59 60 61 62 63 64 65 66 109 110 113 114 115  119}
 
   % figure out A [THIS IS VOODOO, WATCH OUT]
   temp = strsplit(char(frameorder(1,:)),char(0));
@@ -2477,6 +2501,11 @@ case {51 52 53 54 56 57 58 59 60 61 62 63 64 65 66 109 110 113 114 115}
   end
   A = A(1:trialcnt-1,:);
   
+  % hack this in for compatibility
+  if ismember(setnum(1),[119])
+    stimclassrec = ones(1,305);
+  end
+  
   % do a check on number of stimulus trials
   assert(length(stimclassrec)==size(A,1));
 
@@ -2486,7 +2515,10 @@ case {51 52 53 54 56 57 58 59 60 61 62 63 64 65 66 109 110 113 114 115}
     % in this case, determine the spot that will just barely fit the black dot at the lower left
       % we include entries for 1 and 3 even though they never occur.  that's okay.
     validlocations = repmat({[-ptonparams{1}(1)/2+trialparams{3}/2 -ptonparams{1}(2)/2+trialparams{3}/2]'},[1 24]);
-    
+
+  elseif ismember(setnum(1),[119])
+    validlocations = repmat({[-ptonparams{1}(1)/2+trialparams{3}/2 -ptonparams{1}(2)/2+trialparams{3}/2]'},[1 1]);
+
   else
   
     % load from file
