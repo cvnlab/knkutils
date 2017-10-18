@@ -117,3 +117,16 @@ end
 
 % do some setup stuff
 KbName('UnifyKeyNames');
+
+
+
+
+% SCRATCHPAD:
+%
+% Screen('Preference','SkipSyncTests',1);
+% [win,rect] = Screen('OpenWindow',0,127,[]);
+%     %%%oldclut = Screen('ReadNormalizedGammaTable',win);
+% Screen('LoadNormalizedGammaTable',win,repmat(linspace(0,1,256)',[1 3]));
+% 
+% Screen('Close',win);
+% Screen('CloseAll');
