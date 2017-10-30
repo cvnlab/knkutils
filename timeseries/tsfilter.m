@@ -20,6 +20,9 @@ function f = tsfilter(ts,flt,mode)
 % return the filtered time-series data.  we force the output to be real-valued.
 % in general, beware of wraparound and edge issues!
 %
+% history:
+% - 2017/10/30 - speed-ups
+%
 % example:
 % flt = zeros(1,100);
 % flt(40:60) = 1;
@@ -47,11 +50,14 @@ end
 % do it
 switch mode(1)
 case 0
-  f = [];
+  f = zeros(size(ts),class(ts));
   for p=1:ceil(size(ts,1)/num)
+    statusdots(p,ceil(size(ts,1)/num));
     mn = (p-1)*num+1;
     mx = min(size(ts,1),(p-1)*num+num);
-    f = cat(1,f,real(ifft(fft(ts(mn:mx,:),[],2) .* repmat(flt,[mx-mn+1 1]),[],2)));
+    f(mn:mx,:) = real(ifft(fft(ts(mn:mx,:),[],2) .* repmat(flt,[mx-mn+1 1]),[],2));
+%SLOW:
+%    f = cat(1,f,real(ifft(fft(ts(mn:mx,:),[],2) .* repmat(flt,[mx-mn+1 1]),[],2)));
   end
 case {1 2}
   f = processmulti1D(@imfilter,ts,flt,'replicate','same','conv');
