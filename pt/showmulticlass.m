@@ -38,7 +38,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 %                [53 54] or [56 57 58] or [59 60 61] or [62 63 64 65] or [66] or [109 110] or [67 68 69 70 71 72] or
 %                [73 74 75 76 77] or [78 79 80 81] or [82 83 84 85 86 87  88] or [89 90 91 92 93 94] or 
 %                [95 96 97 98 99 100] or [101 102 103 104 105 106] or [107] or [108 112 113 114] or [111] or [115] or 
-%                [116] or [117] or [118] or [119]
+%                [116] or [117] or [118] or [119] or [120]
 % <setnum> (optional) is
 %   1 means the original 31 stimulus classes [15 frames, 3s / 3s]
 %   2 means the horizontally-modulated random space stimuli plus small-scale checkerboard and letters [15 frames, 3s / 3s]
@@ -110,6 +110,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 %   64 is the categoryC7 part 3.  <dres> should be [].
 %   65 is the categoryC7 part 4.  <dres> should be [].
 %   66 is the categoryC8.  <dres> should be [].
+%   120 is the categoryC8h.  <dres> should be [].
 %   109 is the categoryC8 (trialtask version) part 1.  <dres> should be [].
 %   110 is the categoryC8 (trialtask version) part 2.  <dres> should be [].
 %   67 is the categoryC9 part 1a.
@@ -200,6 +201,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 % show the stimulus and then save workspace (except the variable 'images') to <outfile>.
 %
 % history:
+% 2017/10/23 - implement 120
 % 2017/07/10 - implement 119
 % 2016/06/08 - implement 117
 % 2016/06/05 - implement 116
@@ -241,6 +243,7 @@ infofile_categoryC5 = fullfile(stimulusdir,'multiclassinfo_categoryC5.mat');
 infofile_categoryC6 = fullfile(stimulusdir,'multiclassinfo_categoryC6.mat');
 infofile_categoryC7 = fullfile(stimulusdir,'multiclassinfo_categoryC7.mat');
 infofile_categoryC8 = fullfile(stimulusdir,'multiclassinfo_categoryC8.mat');
+infofile_categoryC8h = fullfile(stimulusdir,'multiclassinfo_categoryC8h.mat');
 infofile_categoryC9 = fullfile(stimulusdir,'multiclassinfo_categoryC9.mat');
 infofile_categoryC11 = fullfile(stimulusdir,'multiclassinfo_categoryC11.mat');
 infofile_readingALT = fullfile(stimulusdir,'multiclassinfo_readingALT.mat');
@@ -289,6 +292,8 @@ case {62 63 64 65}
   stimfile = fullfile(stimulusdir,'workspace_categoryC7.mat');
 case {66 109 110}
   stimfile = fullfile(stimulusdir,'workspace_categoryC8.mat');
+case {120}
+  stimfile = fullfile(stimulusdir,'workspace_categoryC8h.mat');
 case {117}
   stimfile = fullfile(stimulusdir,'workspace_categoryC11.mat');
 case {111}
@@ -1031,6 +1036,67 @@ else
         end
       end
     end
+  case {120}
+    if isseq
+      framedesign = {};
+      for p=1:25
+        framedesign{p} = isseq;
+      end
+    else
+    
+      numpresrun = 2;
+      
+      % define
+      numviewpoints = 7;
+      numids = 95;
+      targetprop = 0.9;      
+      frameprob = .25;
+
+      % calc
+      framedesign = {};
+      for p=1:25
+        framedesign{p} = [];
+
+        % there are several presentations in each run
+        for zz=1:numpresrun
+        
+          % generate a sequence of viewpoint numbers.  viewpoint always changes.
+          while 1
+            vpnums = ceil(numviewpoints*rand(1,4));
+            if ~any(diff(vpnums)==0)
+              break;
+            end
+          end
+        
+          % generate a sequence of identity numbers.  no repeats at all.
+          idnums = subscript(permutedim(1:numids),1:4);
+
+          % decide if this is a target trial
+          if rand < targetprop
+
+            % first, allow randomness to try to do its work
+            didoccur = 0;
+            for checkframe=2:4     % for each frame, decide to do a 1-back event (independent)
+              if rand < frameprob
+                didoccur = 1;
+                idnums(checkframe) = idnums(checkframe-1);
+              end
+            end
+            
+            % if it didn't happen, just enforce it
+            if ~didoccur
+              checkframe = 1+ceil(rand*3);  % just pick a frame (2-4)
+              idnums(checkframe) = idnums(checkframe-1);
+            end
+            
+          end
+          
+          % record
+          framedesign{p}(zz,:) = upsamplematrix((idnums-1)*numviewpoints + vpnums,[1 12],[],[],'nearest');
+
+        end
+      end
+    end
   case {117}
     if isseq
       framedesign = {};
@@ -1450,7 +1516,7 @@ if isseq
   case {62 63 64 65}
     trialpattern = eye(49+10);
     onpattern = [1];
-  case {66 109 110}
+  case {66 109 110 120}
     trialpattern = eye(25);
     onpattern = [1];
   case {117}
@@ -1512,6 +1578,8 @@ else
   case {66}
     load(infofile_categoryC8,'trialpattern','onpattern');
     onpattern = upsamplematrix(onpattern,[1 2],[],[],'nearest');
+  case {120}
+    load(infofile_categoryC8h,'trialpattern','onpattern');
   case {117}
     load(infofile_categoryC11,'trialpattern','onpattern');
   case {109 110}
@@ -1809,7 +1877,7 @@ else
     case 65
       classorder = [37 42 9 4 1 2 26 7 31 17 48 39 24 89 78 68 87 73 66 84 83 77 65 64 96 124 134 140 116 147 104 128 136 111 99 143 119 153 179 159 155 183 176 175 148 194 168 167 161 repmat(NaN,[1 10])];
     end
-  case {66}
+  case {66 120}
     classorder = [1:25];
   case {117}
     classorder = [1:10];
@@ -2320,7 +2388,7 @@ otherwise  % this is the normal case
         temp = onpattern;
       
         % this is a special case to modulate position on the fly  [%% framecolor not handled because specialness of setnum]
-        if ismember(setnum(1),[66 109 110 67 68 69 70 71 72 111])
+        if ismember(setnum(1),[66 120 109 110 67 68 69 70 71 72 111])
         
           % they either (1) all come from the first and only class or (2) we handled the offset manually,
           % so there is no need for offset here
@@ -2331,6 +2399,12 @@ otherwise  % this is the normal case
           case {66 109 110}
             csfirst = [-189 -189 -189 -189 -189;-94 -94 -94 -94 -94;0 0 0 0 0;95 95 95 95 95;189 189 189 189 189];
             cssecond = [-189 -94 0 95 189;-189 -94 0 95 189;-189 -94 0 95 189;-189 -94 0 95 189;-189 -94 0 95 189];
+            gridnn = 5;
+            rowii = ceil(stimclass/gridnn);
+            colii = mod2(stimclass,gridnn);
+          case {120}
+            csfirst = [-328 -328 -328 -328 -328; -164 -164 -164 -164 -164; 0 0 0 0 0; 164 164 164 164 164; 328 328 328 328 328];
+            cssecond = [-328 -164 0 164 328; -328 -164 0 164 328; -328 -164 0 164 328; -328 -164 0 164 328; -328 -164 0 164 328];
             gridnn = 5;
             rowii = ceil(stimclass/gridnn);
             colii = mod2(stimclass,gridnn);
@@ -2659,7 +2733,10 @@ if ~isempty(eyelinkfile)
   Eyelink('command','link_event_filter = LEFT,RIGHT,FIXATION,SACCADE,BLINK,MESSAGE,BUTTON');
     % samples available for real time:
   Eyelink('command','link_sample_data = LEFT,RIGHT,GAZE,GAZERES,AREA,STATUS');
-  Eyelink('Openfile',eyelinkfile);
+  temp = regexp(datestr(now),'.+ (\d+):(\d+):(\d+)','tokens');  % HHMMSS    [or datestr(now,'HHMMSS') !]
+  eyetempfile = sprintf('%s.edf',cat(2,temp{1}{:}));
+  fprintf('Saving eyetracking data to %s.\n',eyetempfile);
+  Eyelink('Openfile',eyetempfile);  % NOTE THIS TEMPORARY FILENAME. REMEMBER THAT EYELINK REQUIRES SHORT FILENAME!
   fprintf('Please perform calibration. When done, the subject should press a button in order to proceed.\n');
   EyelinkDoTrackerSetup(el);
 %  EyelinkDoDriftCorrection(el);
@@ -2693,10 +2770,8 @@ if ~isempty(eyelinkfile)
   Eyelink('CloseFile');
   Eyelink('ReceiveFile');
   Eyelink('ShutDown');
+  movefile(eyetempfile,eyelinkfile);  % RENAME DOWNLOADED FILE TO THE FINAL FILENAME
 end
-
-% unsetup PT
-ptoff(oldclut);
 
 %%%%%%%%%%%%% clean up and save
 
@@ -2708,6 +2783,9 @@ vars = vars(cellfun(@(x) ~isequal(x,'images') & ~isequal(x,'maskimages') & ~iseq
 
 % save
 save(outfile,vars{:});
+
+% unsetup PT [DO THIS LAST SO THAT IF WE CRASH, WE DON'T LOSE DATA]
+ptoff(oldclut);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
