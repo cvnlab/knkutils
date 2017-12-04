@@ -375,6 +375,7 @@ imageprocessing/
   imagefilter3D - filter volumes with a Fourier-defined magnitude-based filter
   imagesearch - search through image space to minimize some cost function
   imagesequencetomovie - make a QT movie from images
+  imcropfiles - manually define a crop region and then apply to one or more image files
   imreadmulti - load in multiple images
   imresizedifferentfov - resize an image but use a different field-of-view
   imresizememory - call imresize on a bunch of images, minimizing memory usage
