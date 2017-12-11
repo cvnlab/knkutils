@@ -38,7 +38,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 %                [53 54] or [56 57 58] or [59 60 61] or [62 63 64 65] or [66] or [109 110] or [67 68 69 70 71 72] or
 %                [73 74 75 76 77] or [78 79 80 81] or [82 83 84 85 86 87  88] or [89 90 91 92 93 94] or 
 %                [95 96 97 98 99 100] or [101 102 103 104 105 106] or [107] or [108 112 113 114] or [111] or [115] or 
-%                [116] or [117] or [118] or [119] or [120]
+%                [116] or [117] or [118 121] or [119] or [120]
 % <setnum> (optional) is
 %   1 means the original 31 stimulus classes [15 frames, 3s / 3s]
 %   2 means the horizontally-modulated random space stimuli plus small-scale checkerboard and letters [15 frames, 3s / 3s]
@@ -161,6 +161,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 %   117 is categoryC11.  <dres> should be [].
 %   118 is wnC10.
 %   119 is retinotopyECOG
+%   121 is wnC11 (like wnC10 but just 6 rings)
 %   default: 1.
 % <isseq> (optional) is whether to do the special sequential showing case.  should be either 0 which
 %   means do nothing special, or a positive integer indicating which frame to use.  if a positive
@@ -201,6 +202,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 % show the stimulus and then save workspace (except the variable 'images') to <outfile>.
 %
 % history:
+% 2017/12/10 - implement 121
 % 2017/10/23 - implement 120
 % 2017/07/10 - implement 119
 % 2016/06/08 - implement 117
@@ -270,6 +272,7 @@ infofile_wnB6 = fullfile(stimulusdir,'multiclassinfo_wnB6.mat');
 infofile_wnB7 = fullfile(stimulusdir,'multiclassinfo_wnB7.mat');
 infofile_wnB8 = fullfile(stimulusdir,'multiclassinfo_wnB8.mat');
 infofile_wnC10 = fullfile(stimulusdir,'multiclassinfo_wnC10.mat');
+infofile_wnC11 = fullfile(stimulusdir,'multiclassinfo_wnC11.mat');
 infofile_wnD = fullfile(stimulusdir,'multiclassinfo_wnD.mat');
 infofile_version2 = fullfile(stimulusdir,'multiclassinfo_version2.mat');
 infofile_hrf = fullfile(stimulusdir,'multiclassinfo_hrf.mat');
@@ -321,7 +324,7 @@ case {10 11}
   stimfile = fullfile(stimulusdir,'workspace_wnB.mat');
 case {12 13}
   stimfile = fullfile(stimulusdir,'workspace_wnC.mat');
-case {118}
+case {118 121}
   stimfile = fullfile(stimulusdir,'workspace_wnC10.mat');
 case {14}
   stimfile = fullfile(stimulusdir,'workspace_wnD.mat');
@@ -672,6 +675,20 @@ else
       framedesign = {};
       for p=1:18
         for rep=1:5
+          framedesign{p}(rep,:) = [permutedim(1:35)];
+        end
+      end
+    end
+  case {121}
+    if isseq
+      framedesign = {};
+      for p=1:6
+        framedesign{p} = isseq;
+      end
+    else
+      framedesign = {};
+      for p=12+(1:6)
+        for rep=1:12
           framedesign{p}(rep,:) = [permutedim(1:35)];
         end
       end
@@ -1465,6 +1482,9 @@ if isseq
   case {118}
     trialpattern = eye(18);
     onpattern = [1];
+  case {121}
+    trialpattern = eye(6);
+    onpattern = [1];
   case {82 83 84 85 86 87  88}
     trialpattern = eye(45);
     onpattern = [1];
@@ -1649,6 +1669,8 @@ else
     load(infofile_wnB2,'trialpattern','onpattern');
   case {118}
     load(infofile_wnC10,'trialpattern','onpattern');
+  case {121}
+    load(infofile_wnC11,'trialpattern','onpattern');
   case {30 31 32 33}
     load(infofile_wnB8,'trialpattern','onpattern');
   case {37}
@@ -1954,6 +1976,8 @@ else
     classorder = [31+(1:31) 67:69 NaN];
   case {118}
     classorder = [1:18];
+  case {121}
+    classorder = [12+(1:6)];
   case {30 32 35}
     classorder = [1:31 63:2:69];
   case {37}
