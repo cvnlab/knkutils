@@ -29,7 +29,8 @@ function sgerun2(command,name,wantworkspace,jobindices,priority,flags,memusage)
 %   for example, <flags> could be '-l hostname=azure'.  for a list of
 %   possible resources, try "qconf -sc".  default: ''.
 % <memusage> (optional) is a positive integer indicating the number of megabytes of 
-%   memory that you estimate that your job will use.  default: 12000.
+%   memory that you estimate that your job will use.
+%   default is [] which means don't use this feature.
 %
 % the purpose of this function is to make it easy to deploy MATLAB code on the
 % Sun Grid Engine (SGE).
@@ -160,10 +161,12 @@ if ~exist('flags','var') || isempty(flags)
   flags = '';
 end
 if ~exist('memusage','var') || isempty(memusage)
-  memusage = 12000;
+  memusage = [];
 end
 assert(isint(priority) && priority >= -1024 && priority <= 1023);
-assert(isint(memusage) && memusage >= 1);
+if ~isempty(memusage)
+  assert(isint(memusage) && memusage >= 1);
+end
 
 % deal with the workspace
 if wantworkspace
@@ -215,8 +218,13 @@ savetext([masterdir name '.m'],{prefix specialstr command suffix});
 queuename = getpref('kendrick','sgequeue','batch.q');
 
 % construct the command that submits the job
-qsubcmd = sprintf('qsub %s -N %s -o %s -e %s -l h_vmem=%dM -p %d %s -S /bin/sh -q %s %s %s; ', ...
-  tstr,name,masterdir,masterdir,memusage,priority,flags,queuename,masterscript,name);
+if ~isempty(memusage)
+  memcmd = sprintf('-l h_vmem=%dM',memusage);
+else
+  memcmd = '';
+end
+qsubcmd = sprintf('qsub %s -N %s -o %s -e %s %s -p %d %s -S /bin/sh -q %s %s %s; ', ...
+  tstr,name,masterdir,masterdir,memcmd,priority,flags,queuename,masterscript,name);
 %%% -l virtual_free=%dM
 
 % construct the command that makes the .command file
