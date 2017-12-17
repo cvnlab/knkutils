@@ -28,13 +28,16 @@ for p=1:length(files)
     figure;
     image(im);
 %    axis image tight;
-    pause;
-    ax = round(axis);
+    a = imrect; wait(a); pos = getPosition(a);
+    cmin = round(pos(1));
+    rmin = round(pos(2));
+    cmax = round(pos(1)+pos(3));
+    rmax = round(pos(2)+pos(4));
     close;
   end
   
   % crop image
-  im = im(ax(3):ax(4),ax(1):ax(2),:);
+  im = im(max(1,rmin):min(size(im,1),rmax),max(1,cmin):min(size(im,2),cmax),:);
   
   % write out the image
   imwrite(im,files{p});
