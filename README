@@ -509,6 +509,7 @@ mri/
   writespmfiles - write a series of volumes to individual SPM/ANALYZE files
 
 pt/
+  calcfixationdotchangeperformance - perform analysis of behavioral data for experiments involving dot change detection
   preparedigits - generate some digits and letters as uint8 images
   pton - initialize PsychToolbox stuff
   ptoff - uninitialize PsychToolbox stuff
