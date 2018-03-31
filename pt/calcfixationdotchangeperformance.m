@@ -22,6 +22,7 @@ function results = calcfixationdotchangeperformance(files)
 % internal constants
 deltatime = 1;    % holding the key down for less than this time will be counted as one button press
 respondtime = 1;  % the subject has this much time to press a button
+validkeys = {'1!' '2@' '3#' '4$' '5%' 'r' 'y' 'g' 'b' 't' 'absolutetimefor0' 'trigger'};
 
 % get the files (report to the command window)
 files = matchfiles(files)
@@ -53,6 +54,12 @@ for zz=1:length(files)
   oldkey = ''; oldkeytime = -Inf;
   buttontimes = [];
   for p=1:size(timekeysB,1)
+  
+    % warn if weird key found
+    if ~ismember(timekeysB{p,2},validkeys)
+      fprintf('*** Unknown key detected (%s); ignoring.\n',timekeysB{p,2});
+      continue;
+    end
 
     % is this a bogus key press?
     bad = isequal(timekeysB{p,2},'absolutetimefor0') | ...
