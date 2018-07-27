@@ -376,6 +376,7 @@ imageprocessing/
   imagefilter3D - filter volumes with a Fourier-defined magnitude-based filter
   imagesearch - search through image space to minimize some cost function
   imagesequencetomovie - make a QT movie from images
+  imaveragefiles - average multiple image files together
   imcropfiles - manually define a crop region and then apply to one or more image files
   imreadmulti - load in multiple images
   imrectsquare - enforce square and integer crop to an imrect
