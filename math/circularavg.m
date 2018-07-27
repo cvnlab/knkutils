@@ -14,6 +14,9 @@ function f = circularavg(m,modv,dim,mode)
 % return the circular average (or median) of <m> along <dim>.  the resulting values 
 % will be in the range [0,<modv>).  NaNs in <m> are okay (we just ignore them).
 %
+% history:
+% - 2018/05/10 - fix major bug for <mode>==1 (median)
+%
 % example:
 % circularavg([.5 2*pi-.5])
 
@@ -34,5 +37,6 @@ switch mode
 case 0
   f = mod(angle(   nansum(ang2complex(m*((2*pi)/modv)),dim)),2*pi)*(modv/(2*pi));
 case 1
-  f = mod(angle(nanmedian(ang2complex(m*((2*pi)/modv)),dim)),2*pi)*(modv/(2*pi));
+  temp = ang2complex(m*((2*pi)/modv));
+  f = mod(angle(nanmedian(real(temp),dim) + j*nanmedian(imag(temp),dim)),2*pi)*(modv/(2*pi));
 end
