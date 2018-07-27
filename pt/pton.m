@@ -1,6 +1,6 @@
-function oldclut = pton(resolution,winsize,clutfile,skipsync)
+function oldclut = pton(resolution,winsize,clutfile,skipsync,wantstereo)
 
-% function oldclut = pton(resolution,winsize,clutfile,skipsync)
+% function oldclut = pton(resolution,winsize,clutfile,skipsync,wantstereo)
 %
 % <resolution> (optional) is [width height framerate bitdepth] (e.g. [800 600 60 32]).
 %   default is [] which means do not set the resolution.
@@ -20,6 +20,7 @@ function oldclut = pton(resolution,winsize,clutfile,skipsync)
 %   the clut should be a 256 x 3 matrix with values in [0,1].
 %   default: [].
 % <skipsync> (optional) is whether to skip the sync tests.  default: 0.
+% <wantstereo> (optional) is whether to use VPIXX stereo mode.  default: 0.
 %
 % initialize the PsychToolbox setup:
 %   we assume that you want to operate on the screen with the maximum number.
@@ -36,6 +37,7 @@ function oldclut = pton(resolution,winsize,clutfile,skipsync)
 %   we don't rely on any java stuff.
 %
 % history:
+% 2018/05/26 - add <wantstereo> input
 % 2011/10/13 - now always generate a CLUT at 8-bit (256 rows).
 %
 % example:
@@ -54,6 +56,9 @@ end
 if ~exist('skipsync','var') || isempty(skipsync)
   skipsync = 0;
 end
+if ~exist('wantstereo','var') || isempty(wantstereo)
+  wantstereo = 0;
+end
 
 % make sure ptoff
 ptoff;
@@ -63,6 +68,25 @@ AssertOpenGL;
 
 % which screen will we be operating upon?
 screennum = max(Screen('Screens'));
+
+% deal with stereo stuff
+if wantstereo
+
+  % NOTE: we assume useHardwareStereo==1 is true!!
+
+  PsychImaging('PrepareConfiguration');
+  PsychImaging('AddTask', 'General', 'UseDataPixx');
+  %%%PsychImaging('AddTask', 'AllViews', 'RestrictProcessing', CenterRect([0 0 512 512], Screen('Rect', screennum)));
+  Datapixx('Open');
+  Datapixx('EnableVideoScanningBacklight');       % Only required if a VIEWPixx.
+  Datapixx('EnableVideoStereoBlueline');
+  Datapixx('SetVideoStereoVesaWaveform', 2);      % If driving NVIDIA glasses
+  if Datapixx('IsViewpixx3D')
+    Datapixx('EnableVideoLcd3D60Hz');
+  end
+  Datapixx('RegWr');
+
+end
 
 % set the resolution of the screen
 if ~isempty(resolution)
@@ -79,9 +103,16 @@ else
   rect = Screen('Rect',screennum);  % what is the total rect
   rect = CenterRect(round([0 0 rect(3)*winsize rect(4)*winsize]),rect);  % construct new size
 end
-[win,rect] = Screen('OpenWindow',screennum,127,rect);
-  % STEREO MODE:
-  %[win,rect] = Screen('OpenWindow',screennum,127,rect,[],[],4);
+
+% open the window
+if wantstereo
+      %   % STEREO MODE:
+      %   %[win,rect] = Screen('OpenWindow',screennum,127,rect,[],[],4);
+  [win,rect] = PsychImaging('OpenWindow', screennum, 127, rect, [], [], 1);
+  SetStereoBlueLineSyncParameters(win, rect(4)+10);
+else
+  [win,rect] = Screen('OpenWindow',screennum,127,rect);
+end
 
 % record the current clut
 oldclut = Screen('ReadNormalizedGammaTable',win);

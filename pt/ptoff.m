@@ -6,7 +6,8 @@ function ptoff(oldclut)
 %   default is [] which means do not restore a clut.
 %
 % uninitialize the PsychToolbox setup by restoring the clut
-% and closing all PsychToolbox windows.
+% and closing all PsychToolbox windows. we also attempt to
+% close out the stereo-related stuff.
 %
 % use in conjunction with pton.m.
 %
@@ -26,3 +27,13 @@ if ~isempty(oldclut)
 end
 Screen('Close',win);
 Screen('CloseAll');
+
+% deal with stereo stuff
+try 
+  if Datapixx('IsViewpixx3D')
+    Datapixx('DisableVideoLcd3D60Hz');
+    Datapixx('RegWr');
+  end
+  Datapixx('Close');
+catch
+end
