@@ -14,4 +14,8 @@ function histrobust(varargin)
 % figure; histrobust(xx);
 
 rng = robustrange(varargin{1});
-hist(normalizerange(varargin{1},rng(1),rng(2),rng(1),rng(2)),varargin{2:end});
+if rng(1) == rng(2)
+  hist(varargin{1},varargin{2:end});
+else
+  hist(normalizerange(varargin{1},rng(1),rng(2),rng(1),rng(2)),varargin{2:end});
+end
