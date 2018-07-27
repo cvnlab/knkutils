@@ -484,6 +484,7 @@ graphic/
   xyzscale - construct a scaling transformation matrix
   xyztranslate - construct a translating transformation matrix
   xyzrotate_* - construct a rotation transformation matrix
+  xyzrotatetoz - return rotation transformation matrix to align a vector with positive z-axis
 
 mri/
   calchrfpeak - estimate the peak (positive or negative) value of an HRF
