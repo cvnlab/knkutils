@@ -1,6 +1,6 @@
-function [h1,h2] = scatterb(x,y,edges,estring,ptstring,bootsz,minnum,mode)
+function [h1,h2,md,p25,p75] = scatterb(x,y,edges,estring,ptstring,bootsz,minnum,mode)
 
-% function [h1,h2] = scatterb(x,y,edges,estring,ptstring,bootsz,minnum,mode)
+% function [h1,h2,md,p25,p75] = scatterb(x,y,edges,estring,ptstring,bootsz,minnum,mode)
 %
 % <x> is a matrix with x-values.
 % <y> is a matrix with y-values.  should be the same size as <x>.
@@ -10,7 +10,7 @@ function [h1,h2] = scatterb(x,y,edges,estring,ptstring,bootsz,minnum,mode)
 % <estring> (optional) is a plot string for the main line and error bar lines.  default: 'r-'.
 % <ptstring> (optional) is a scatter string for the percentile markers.  default: 'ro'.
 %   if 0, then omit the percentile markers.  in this case, <h2> is returned as [].
-% <bootsz> (optional) is the <sz> argument to bootstrap.m
+% <bootsz> (optional) is the <sz> argument to bootstrap.m. If NaN, skip.
 % <minnum> (optional) is the minimum number of data points that must be
 %   in a bin in order for us to plot that bin.  default: 10.
 % <mode> (optional) is
@@ -26,6 +26,7 @@ function [h1,h2] = scatterb(x,y,edges,estring,ptstring,bootsz,minnum,mode)
 % third, we draw markers indicating the 25th and 75th percentile of each bin.
 % return <h1> as a vector of handles to the main lines and error bar lines.
 % return <h2> as a vector of handles to the markers.
+% return <md>,<p25>,<p75> as vectors of the 50th, 25th, and 75th percentiles of each bin.
 %
 % we deal with NaNs gracefully.
 %
@@ -69,15 +70,21 @@ for p=1:length(edges)-1
   end
   
   % calc
-  md = [md nanmedian(y(ok))];
-  temp = bootstrap(y(ok),@nanmedian,[],bootsz);
-  if mode==0
-    se = [se nanstd(temp)];
-  else
-    se = [se prctile(temp,[15.87 84.13])*[1;j]];
+        %   md = [md nanmedian(y(ok))];
+        %   p25 = [p25 prctile(y(ok),25)];
+        %   p75 = [p75 prctile(y(ok),75)];
+  ppp = prctile(y(ok),[25 50 75]);
+  md = [md ppp(2)];
+  p25 = [p25 ppp(1)];
+  p75 = [p75 ppp(3)];
+  if ~isnan(bootsz)
+    temp = bootstrap(y(ok),@nanmedian,[],bootsz);
+    if mode==0
+      se = [se nanstd(temp)];
+    else
+      se = [se prctile(temp,[15.87 84.13])*[1;j]];
+    end
   end
-  p25 = [p25 prctile(y(ok),25)];
-  p75 = [p75 prctile(y(ok),75)];
 
 end
 
@@ -85,9 +92,13 @@ end
 hold on;
 h1 = plot(loc,md,estring);
 if mode==0
-  h1 = [h1 errorbar2(loc,md,se,'v',estring)];
+  if ~isnan(bootsz)
+    h1 = [h1 errorbar2(loc,md,se,'v',estring)];
+  end
 else
-  h1 = [h1 errorbar2(loc,(real(se)+imag(se))/2,range([real(se); imag(se)],1)/2,'v',estring)];
+  if ~isnan(bootsz)
+    h1 = [h1 errorbar2(loc,(real(se)+imag(se))/2,range([real(se); imag(se)],1)/2,'v',estring)];
+  end
 end
 if isequal(ptstring,0)
   h2 = [];
