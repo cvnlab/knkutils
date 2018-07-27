@@ -375,6 +375,7 @@ imageprocessing/
   imagefilter - filter images with a Fourier-defined magnitude-based filter
   imagefilter3D - filter volumes with a Fourier-defined magnitude-based filter
   imagesearch - search through image space to minimize some cost function
+  imagesequenceconcatenate - concatenate multiple image files together
   imagesequencetomovie - make a QT movie from images
   imaveragefiles - average multiple image files together
   imcropfiles - manually define a crop region and then apply to one or more image files
