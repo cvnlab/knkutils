@@ -156,6 +156,7 @@ programming/
   promptforfile - get a .mat file name from the user
   repeatuntil - call a function until a condition is satisfied
   reportmemoryandtime - use a warning to report the current memory usage and the current time
+  rmdirquiet - remove a file or directory, suppressing warnings
   rowfun - apply a function to each row of a 2D matrix
   runmatlabinbg.pl - run MATLAB in the background for a single function/script call
   saveemptymat - save an empty .mat file
