@@ -280,6 +280,7 @@ stats/
   evalgeneralizedgaussian - evaluate generalized Gaussian pdf
   filter2subsample - apply filter2 and then subsample the result
   findlocal - find points that are close to a given point
+  findtailthreshold - determine a threshold for a distribution of data using a GMM with 2 Gaussians
   fit2dpolynomialmodel - use polynomial basis functions to fit a surface defined in 2D, allowing scale factor for different cases
   fit3dpolynomialmodel - use polynomial basis functions to fit a surface defined in 3D, allowing scale factor for different cases
   fit3dpolynomialmodel2 - use polynomial basis functions to fit a surface defined in 3D, allowing DC offset for different cases
