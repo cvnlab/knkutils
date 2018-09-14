@@ -107,7 +107,8 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %     and B is the number of pixels for the width of the border of the dot 
 %     (the border is black).  for example, [6 1] means to use a dot that has
 %     radius 3 and that has a border from 2 pixels to 3 pixels away from the center.
-%     note that the default of 5 is equivalent to [5 0].
+%     note that the default of 5 is equivalent to [5 0].  another special case
+%     is {[A B] COLOR} where COLOR is a 1x3 uint8 color to use for the border.
 %   B where B is an N x N image of values in [0,1].  This image defines the
 %     "fixation dot".  A value of 1 means to be fully opaque, and a value of 0
 %     means to be fully transparent.  We detect this case by checking if
@@ -306,6 +307,7 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   So it is important to test your particular setup!
 %
 % history:
+% 2018/09/14 - extend fixationsize to the {[A B] COLOR} case
 % 2018/07/27 - tweak to glitch-compensation mechanism. this is tricky business.
 % 2018/05/25 - add <stereocontrol> as input and <stereoflip> as input
 % 2018/01/10 - CHANGE TO BEHAVIOR: triggerfun is now issued at the end of the movie also.
@@ -445,8 +447,11 @@ end
 if ischar(maskimages)
   maskimages = {maskimages};
 end
-if size(fixationsize,1) == 1 && length(fixationsize) == 1
+if ~iscell(fixationsize) && (size(fixationsize,1) == 1 && length(fixationsize) == 1)
   fixationsize = [fixationsize 0];
+end
+if ~iscell(fixationsize) && (size(fixationsize,1) == 1)
+  fixationsize = {fixationsize uint8([0 0 0])};
 end
 wantframefiles = ~isempty(framefiles);
 if ~isempty(framefiles)
@@ -604,7 +609,7 @@ if isempty(fixationorder)
 end
 
 % prepare fixationrect (movierect is now computed right before it is needed)
-if size(fixationsize,1) == 1  % dot case
+if iscell(fixationsize)  % dot case
   % easy case
   if ~focase4
     if focase3
@@ -612,12 +617,12 @@ if size(fixationsize,1) == 1  % dot case
     else
       fixationoff0 = 0;
     end
-    fixationrect = CenterRect([0 0 2*fixationsize(1) 2*fixationsize(1)],rect) + [offset(1) offset(2) offset(1) offset(2)] + fixationoff0;  % allow doubling of fixationsize for room for anti-aliasing
+    fixationrect = CenterRect([0 0 2*fixationsize{1}(1) 2*fixationsize{1}(1)],rect) + [offset(1) offset(2) offset(1) offset(2)] + fixationoff0;  % allow doubling of fixationsize for room for anti-aliasing
   % special case of multiple digits
   else
     fixationrect = {};
     for p=1:length(fixationorder{3})
-      fixationrect{p} = CenterRect([0 0 2*fixationsize(1) 2*fixationsize(1)],rect) + [offset(1) offset(2) offset(1) offset(2)] + repmat(fixationorder{3}{p},[1 2]);
+      fixationrect{p} = CenterRect([0 0 2*fixationsize{1}(1) 2*fixationsize{1}(1)],rect) + [offset(1) offset(2) offset(1) offset(2)] + repmat(fixationorder{3}{p},[1 2]);
     end
   end
 else  % image case
@@ -636,18 +641,19 @@ if ~iscell(fixationorder)
   fixationcase = any(fixationorder < 0);  % 0 means regular case, 1 means negative-integer case
 
   % dot case
-  if size(fixationsize,1) == 1
+  if iscell(fixationsize)
 
       % 2*fixationsize x 2*fixationsize x 3 x N; several different uint8 solid colors
-    fixationimage = zeros([2*fixationsize(1) 2*fixationsize(1) 3 size(fixationcolor,1)]);
-    temp = find(makecircleimage(2*fixationsize(1),fixationsize(1)/2-fixationsize(2)));  % this tells us where to insert color
+    fixationimage = zeros([2*fixationsize{1}(1) 2*fixationsize{1}(1) 3 size(fixationcolor,1)]);
+    temp = find(makecircleimage(2*fixationsize{1}(1),fixationsize{1}(1)/2-fixationsize{1}(2)));  % this tells us where to insert color
     for p=1:size(fixationcolor,1)
-      temp0 = zeros([2*fixationsize(1)*2*fixationsize(1) 3]);  % everything is initially black
+      temp0 = zeros([2*fixationsize{1}(1)*2*fixationsize{1}(1) 3]);  % everything is initially black
+      temp0 = repmat(double(fixationsize{2}),[size(temp0,1) 1]);     % but we fill it with the specified color
       temp0(temp,:) = repmat(fixationcolor(p,:),[length(temp) 1]);  % insert color in the innermost circle
-      fixationimage(:,:,:,p) = reshape(temp0,[2*fixationsize(1) 2*fixationsize(1) 3]);
+      fixationimage(:,:,:,p) = reshape(temp0,[2*fixationsize{1}(1) 2*fixationsize{1}(1) 3]);
     %OLD:    fixationimage(:,:,:,p) = repmat(reshape(fixationcolor(p,:),[1 1 3]),[2*fixationsize 2*fixationsize]);
     end
-    fixationalpha = 255*makecircleimage(2*fixationsize(1),fixationsize(1)/2);  % 2*fixationsize x 2*fixationsize; double [0,255] alpha values (255 in circle, 0 outside)
+    fixationalpha = 255*makecircleimage(2*fixationsize{1}(1),fixationsize{1}(1)/2);  % 2*fixationsize x 2*fixationsize; double [0,255] alpha values (255 in circle, 0 outside)
   
   % image case
   else
@@ -664,7 +670,7 @@ if ~iscell(fixationorder)
 else
 
   % prepare digits as 2*fixationsize x 2*fixationsize x 3 x N; uint8 format
-  digits = drawtexts(2*fixationsize(1),0,0,'Helvetica',fixationorder{1}, ...
+  digits = drawtexts(2*fixationsize{1}(1),0,0,'Helvetica',fixationorder{1}, ...
                      [1 1 1],[0 0 0],mat2cell(['0':'9' 'A':'Z'],1,ones(1,10+26)));
   digits = round(normalizerange(digits,0,1));  % binarize so that values are either 0 or 1
   digsize = sizefull(digits,3);
@@ -693,8 +699,8 @@ else
     fixationalpha(:,:,end+1) = 0;  % the last frame is completely transparent
   else
     % (255 in circle, 0 outside). gradual ramp.
-    fixationalpha = repmat(uint8(255*makecircleimage(2*fixationsize(1), ...
-                    fixationsize(1)/2-fixationsize(2),[],[],fixationsize(1)/2)),[1 1 (10+26)*2+1]);
+    fixationalpha = repmat(uint8(255*makecircleimage(2*fixationsize{1}(1), ...
+                    fixationsize{1}(1)/2-fixationsize{1}(2),[],[],fixationsize{1}(1)/2)),[1 1 (10+26)*2+1]);
   end
   
 end
