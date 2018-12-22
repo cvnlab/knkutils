@@ -69,7 +69,7 @@ end
 
 %REMOVE since hard-coded now
 %str = sort(strsplit(str,'+'));%% sort the stuff in between + signs to try to ensure consistent ordering!!!
-str = strsplit(str,'+');
+str = strsplitalt(str,'+');
 str = cat(1,str,repmat({'+'},[1 length(str)]));
 str = cat(2,str{:});
 str = str(1:end-1);
