@@ -12,6 +12,7 @@ function f = calcconfusionmatrix(m1,m2,mode,wantnanpp)
 %   3 means use calcmutualinformation.m
 %   4 means Euclidean distance
 %   5 means use dot after unit-length-normalize
+%   6 means perform regression and use R^2 (relative to 0)
 %   default: 2.
 % <wantnanpp> (optional) is whether to perform NaN pre-processing. default: 1.
 %
@@ -26,6 +27,9 @@ function f = calcconfusionmatrix(m1,m2,mode,wantnanpp)
 %   of <m2> and each dimension of <m1>.
 % if <mode> is 4, we calculate the Euclidean distance.
 % if <mode> is 5, this is like 2 except we don't subtract the mean first.
+% if <mode> is 6, this means scale the column of <m2> to match the column
+%   of <m1> (i.e. perform regression) and then quantify the goodness of the fit
+%   to <m1> using R^2 (where this is calculated relative to 0).
 %
 % if <wantnanpp>, we perform some pre-processing on <m1> and <m2> to deal with the case 
 % where one or more elements of these matrices are NaN.  specifically, we omit all
@@ -39,6 +43,7 @@ function f = calcconfusionmatrix(m1,m2,mode,wantnanpp)
 % calcconfusionmatrix(x)
 %
 % history:
+% 2018/12/22 - add <mode>==6 case
 % 2014/09/16 - add <wantnanpp> input
 % 2010/06/05 - implement detection and exclusion of rows with NaNs
 
@@ -84,4 +89,12 @@ case 4
   end
 case 5
   f = unitlength(m2,1,[],0)'*unitlength(m1,1,[],0);  % OOPS, slow if m2=m1
+case 6
+  f = zeros(size(m2,2),size(m1,2));
+  for rr=1:size(m2,2)
+    for cc=1:size(m1,2)
+      h = olsmatrix(m2(:,rr))*m1(:,cc);
+      f(rr,cc) = calccod(h*m2(:,rr),m1(:,cc),[],0,0);
+    end
+  end
 end
