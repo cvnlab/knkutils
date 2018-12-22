@@ -26,6 +26,7 @@ function f = matchfiles(patterns,sorttype)
 % same limitations.
 %
 % history:
+% 2018/12/22 - we now return duplicates and issue a warning if duplicates are found.
 % 2017/01/31 - switch to using Keith Jamison's fullfilematch.m implementation
 % 2011/09/28 - if ls returns too many files, resort to alternative.  also, the alternative mode now allows sorttype to be specified.
 % 2011/08/07 - allow empty matrix as an input
@@ -59,7 +60,7 @@ function files = fullfilematch(filestrings,case_sensitive,sorttype)
 %                        'tr' = 'oldest->newest'
 %                        
 % Outputs:
-%   files: cell array of UNIQUE matching filenames
+%   files: cell array of (potentially non-unique) matching filenames
 %
 % Example: 
 % > F=fullfilematch('~/somedir*/*.mat')
@@ -187,10 +188,13 @@ for f = 1:numel(filestrings)
     filedates=[filedates(:); filedates_tmp(:)];
 end
 
-% remove duplicate filenames
+% check for duplicate filenames (if there are, issue a warning)
 [~,iu] = unique(files);
-files=files(iu);
-filedates=filedates(iu);
+if length(iu) < length(files)
+  warning('Duplicate filenames found. We are including the duplicates! Consider using unique.m on the output.');
+  %files=files(iu);
+  %filedates=filedates(iu);
+end
 
 % sort by filename or by date
 if strcmpi(sorttype,'t')
