@@ -10,6 +10,8 @@ in your MATLAB startup.m file.
 Below we document major code changes.  Minor code changes and tweaks that have no significant impact are not mentioned here (e.g. things like cosmetic adjustments, code speed-ups, making functions more general by adding optional input arguments, fixing bugs that would have result in code crashes, etc.).  Major changes include things that make the code backwards-incompatible and things that change actual analysis results.
 
 History of major code changes:
+2018/12/22 - matchfiles.m now RETURNS any duplicate filename matches. This changes past behavior.
+2018/12/22 - to resolve function naming conflicts, we have done the following: (1) completely removed the function called count.m, (2) completely removed the function called discretize.m, (3) renamed the function strsplit.m to strsplitalt.m
 2014/07/31 - in constructpolynomialmatrix.m, we now make the polynomials orthogonal and unit length. this changes previous behavior!
 2013/11/18 - use a smoother canonical HRF in getcanonicalhrf.m
 2013/09/07 - fix bug in fitnonlinearmodel (if polynomials or extra regressors were used in multiple runs, then they were not getting fit properly).
@@ -177,7 +179,7 @@ string/
   matchword - return the first word found in a string
   randomword - generate a random word consisting of capital letters
   sortnumerical - sort a cell vector of strings according to trailing integers
-  strsplit - split a string based on a pattern
+  strsplitalt - split a string based on a pattern
 
 io/
   absolutepath - return the absolute path to a given file
@@ -217,9 +219,7 @@ math/
   circulardiff - difference between two values defined in a circular domain
   circularshiftandsum - take a vector, circularly shift it multiple times, and sum
   clipoutliers - clip the outliers of a matrix
-  count - sum all elements of a matrix
   countinstances - count how many 1s, 2s, etc. are in a matrix
-  discretize - round elements of a matrix to one of two values
   divnorm - apply divisive normalization to a matrix
   matchgain - figure out scalar factor to match one set of data to another
   meanandse - calculate the mean and standard error

@@ -332,7 +332,7 @@ for xx=1:n
   y0ok = ~isnan(y0(:,xx));
   
   % if any of the important dimensions are zero, we have to avoid the GPU temporarily
-  if gpuon && (count(yok)==0 || count(y0ok)==0 || qt==0)
+  if gpuon && (sum(yok)==0 || sum(y0ok)==0 || qt==0)
     gpuon = 0;
     tempgpuoff = 1;
   end

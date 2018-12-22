@@ -52,5 +52,5 @@ toohigh = m > pmx;
 m(toohigh) = max(m(~toohigh));
 toolow = m < pmn;
 m(toolow) = min(m(~toolow));
-numhigh = count(toohigh);
-numlow = count(toolow);
+numhigh = sum(toohigh(:));
+numlow = sum(toolow(:));

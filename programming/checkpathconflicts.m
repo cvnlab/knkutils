@@ -7,7 +7,7 @@ function f = checkpathconflicts
 % report results to stdout.  return number of conflicts found.
 
 % get all dirs
-pathdirs = strsplit(path,pathsep);
+pathdirs = strsplitalt(path,pathsep);
 
 % do it
 f = 0;
