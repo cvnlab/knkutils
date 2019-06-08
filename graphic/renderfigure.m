@@ -23,6 +23,9 @@ function f = renderfigure(res,wantgray)
 % figure; drawbar(0,.2,.1,pi/6,.1,.4,[.5 .1 .3],[1 1 1]);
 % temp = renderfigure(500); figure; imagesc(temp); axis equal tight;
 
+% history:
+% - 2019/06/08 - tweak resolution issues.
+
 % input
 if ~exist('wantgray','var') || isempty(wantgray)
   wantgray = 0;
@@ -34,10 +37,12 @@ set(gcf,'Visible','off');
 
 % make nice and big and square
 pos = getfigurepos;
-setfigurepos([0 0 max(500,res*2) max(500,res*2)]);
-if res*2 > 10000
-  error('res*2 is probably too big...')
-end
+setfigurepos([0 0 500 500]);
+  % OLD:
+  %setfigurepos([0 0 max(500,res*2) max(500,res*2)]);
+  %if res*2 > 10000
+  %  error('res*2 is probably too big...')
+  %end
 
 % remove axis and prep position of axis (to reduce weird boundingbox issues)
 axis off;
@@ -54,7 +59,8 @@ if ismember(wantgray,[0 1])
   fct = 65535;
 else
         %%%"-r72x72" -g1199x1199 
-  assert(unix(sprintf('gs -q -dQUIET -dPARANOIDSAFER -dEPSCrop -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -dDOINTERPOLATE -dAlignToPixels=0 -dGridFitTT=0 -dGraphicsAlphaBits=4 -dTextAlphaBits=4 -sDEVICE=pngalpha -sOutputFile=%s.png %s.eps',tmpfile,tmpfile))==0);
+  dres = round(2 * 72 * (res/500));  % HEURISTIC
+  assert(unix(sprintf('gs -q -dQUIET -dPARANOIDSAFER -dEPSCrop -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -dDOINTERPOLATE -dAlignToPixels=0 -dGridFitTT=0 -dGraphicsAlphaBits=4 -dTextAlphaBits=4 -sDEVICE=pngalpha -r%d -sOutputFile=%s.png %s.eps',dres,tmpfile,tmpfile))==0);
   assert(unix(sprintf('convert %s.png -scale %dx%d! %s.png',tmpfile,res,res,tmpfile))==0);
   fct = 255;
 end
