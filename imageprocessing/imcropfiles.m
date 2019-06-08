@@ -1,11 +1,13 @@
-function thecrop = imcropfiles(files,thecrop)
+function thecrop = imcropfiles(files,thecrop,cmap)
 
-% function thecrop = imcropfiles(files,thecrop)
+% function thecrop = imcropfiles(files,thecrop,cmap)
 %
 % <files> matches one or more image files
 % <thecrop> (optional) is a previous output of this function.
 %   This is useful if you want to re-use a crop.  If supplied,
 %   we do not need to have any user interaction.
+% <cmap> (optional) is a colormap to use for writing indexed
+%   color images. If [], don't use a colormap.
 %
 % this function is for quickly applying a manually
 % defined crop to a bunch of images. it is assumed
@@ -18,6 +20,11 @@ function thecrop = imcropfiles(files,thecrop)
 % the original files).
 %
 % we return the crop in case you want to reuse it.
+
+% input
+if ~exist('cmap','var') || isempty(cmap)
+  cmap = [];
+end
 
 % figure out the file paths
 files = matchfiles(files);
@@ -50,6 +57,10 @@ for p=1:length(files)
   im = im(thecrop(1):thecrop(2),thecrop(3):thecrop(4),:);
   
   % write out the image
-  imwrite(im,files{p});
+  if isempty(cmap)
+    imwrite(im,files{p});
+  else
+    imwrite(im,cmap,files{p});
+  end
 
 end
