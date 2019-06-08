@@ -79,6 +79,7 @@ function [vols,paramsB,refvol] = motioncorrectvolumes(vols,volsize,figuredir,ref
 % see also coregistervolumes.m.
 %
 % history:
+% 2019/06/08 - add a composite figure
 % 2016/02/22 - add output <refvol>
 % 2011/04/13 - add input <epiignoremcvol>
 % 2011/03/25 - add input <binarymask>
@@ -265,6 +266,61 @@ parfor p=1:numvols
 
 end
 fprintf('done.\n');
+
+% make composite figure
+if ~isempty(figuredir)
+
+  figureprep([100 100 1500 800]);
+  
+  % plot each run
+  cnt = 0;
+  h = [];
+  h2 = [];
+  for p=1:length(paramsB)
+    xx = cnt+(1:size(paramsB{p},1)-1);
+    subplot(2,1,1); hold on;
+    h(1) = plot(xx,paramsB{p}(2:end,1)-paramsB{p}(1,1),'r-','LineWidth',3);
+    h(2) = plot(xx,paramsB{p}(2:end,2)-paramsB{p}(1,2),'g-','LineWidth',3);
+    h(3) = plot(xx,paramsB{p}(2:end,3)-paramsB{p}(1,3),'b-','LineWidth',3);
+    subplot(2,1,2); hold on;
+    h2(1) = plot(xx,paramsB{p}(2:end,4)/pi*180,'r-','LineWidth',3);
+    h2(2) = plot(xx,paramsB{p}(2:end,5)/pi*180,'g-','LineWidth',3);
+    h2(3) = plot(xx,paramsB{p}(2:end,6)/pi*180,'b-','LineWidth',3);
+    cnt = xx(end);
+  end
+
+  % deal with axis stuff (plot 1)
+  subplot(2,1,1); hold on;
+  ax = axis; mx = max(abs([ax(3:4) 3]));
+  axis([0 cnt+1 -mx mx]);
+  xlabel('volume number'); ylabel('translation (mm)');
+  
+  % deal with axis stuff (plot 2)
+  subplot(2,1,2); hold on;
+  ax = axis; mx = max(abs([ax(3:4) 2]));
+  axis([0 cnt+1 -mx mx]);
+  xlabel('volume number'); ylabel('rotation (deg)');
+
+  % put up vertical lines
+  cnt = 0;
+  for p=1:length(paramsB)
+    subplot(2,1,1); hold on;
+    straightline(cnt+[0.5 size(paramsB{p},1)-1+.5],'v','k-');
+    subplot(2,1,2); hold on;
+    straightline(cnt+[0.5 size(paramsB{p},1)-1+.5],'v','k-');
+    cnt = cnt + size(paramsB{p},1)-1;
+  end
+  
+  % make legend at the end
+  subplot(2,1,1); hold on;
+  legend(h,{'x' 'y' 'z'});
+  subplot(2,1,2); hold on;
+  legend(h2,{'pitch' 'roll' 'yaw'});
+
+  % write figure
+  figurewrite('motionallruns',[],[],figuredir);
+  
+end
 
 % prepare output
 if isbare
