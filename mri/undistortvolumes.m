@@ -27,7 +27,11 @@ function [newvols,voloffset,validvol] = undistortvolumes(vols,volsize,pixelshift
 %   resampled at a location corresponding to a one-voxel shift along the first
 %   dimension.  <extratrans> can also be {X} where X is 4 x vertices, indicating
 %   the exact locations (relative to the matrix space of the 3D volume) at which
-%   to sample the data.  in this case, <targetres> must be [].  default: eye(4).
+%   to sample the data.  in this case, <targetres> must be [].  
+%   <extratrans> can also be {X Y Z} where X, Y, and Z are 3D volumes that 
+%   specify the exact locations (relative to the matrix space of the 
+%   original 3D volume) at which to sample the data.  in this case,
+%   <targetres> must be [] (it is implicitly determined).  default: eye(4).
 % <targetres> (optional) is
 %   (1) [X Y Z], a 3-element vector with the number of voxels desired for the final 
 %       output.  if supplied, then volumes will be interpolated only at the points 
@@ -70,6 +74,7 @@ function [newvols,voloffset,validvol] = undistortvolumes(vols,volsize,pixelshift
 % we use parfor to speed up execution.
 %
 % history:
+% 2019/06/08 - implement {X Y Z} case for <extratrans>
 % 2016/05/02 - add support for <vols> being complex
 % 2014/09/16 - allow <extratrans> to be the {X} case
 % 2011/03/19 - final polishing of recent changes.  these included: switch to ba_interp3; use ba_interp3 for forward distortion; new output validvol; explicit on data format issues; more flexible input; int16 for the output
@@ -102,17 +107,26 @@ voldim = sizefull(vols,3);
 wantspecialcrop = iscell(targetres) && targetres{3}==1;
 
 % deal with special vertex/flat case
-if iscell(extratrans)
+if iscell(extratrans) && length(extratrans)==1
   targetres = [size(extratrans{1},2) 1];
   dimdata = 1;
+elseif iscell(extratrans) && length(extratrans)==3
+  targetres = sizefull(extratrans{1},3);
+  dimdata = 3;
 else
   dimdata = 3;
 end
 
 % construct coordinates (which are always in matrix space)
-if iscell(extratrans)
+if iscell(extratrans) && length(extratrans)==1
   coords = extratrans{1};
   extratrans = 1;  % necessary hack because later we will do inv(extratrans)
+elseif iscell(extratrans) && length(extratrans)==3
+  coords = [flatten(extratrans{1});
+            flatten(extratrans{2});
+            flatten(extratrans{3})];
+  coords(4,:) = 1;
+  extratrans = 1;
 else
   if iscell(targetres)
     targetres = targetres{1};  % now, targetres is always a 3-element vector.  note that we ignore targetres{2} currently!
