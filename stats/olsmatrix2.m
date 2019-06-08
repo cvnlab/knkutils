@@ -1,12 +1,15 @@
-function f = olsmatrix2(X)
+function f = olsmatrix2(X,lambda)
 
-% function f = olsmatrix2(X)
+% function f = olsmatrix2(X,lambda)
 %
 % <X> is samples x parameters
+% <lambda> (optional) is the ridge parameter. Default: 0.
 %
 % what we want to do is to perform OLS regression using <X>
 % and obtain the parameter estimates.  this is accomplished
 % by inv(X'*X)*X'*y = f*y where y is the data (samples x cases).
+% if <lambda> is supplied, we perform ridge regression like:
+%   inv(X'*X + lambda*eye(size(X,2)))*X'*y = f*y
 %
 % what this function does is to return <f> which has dimensions
 % parameters x samples.
@@ -28,9 +31,15 @@ function f = olsmatrix2(X)
 % see also olsmatrix.m.
 %
 % history:
+% 2019/03/22 - add <lambda> input
 % 2013/05/12 - change how zero-regressors are handled: if zero regressors are
 %              found, give a warning and ensure that zero weights are assigned to
 %              them (thus, we no longer result in a crash).
+
+% inputs
+if ~exist('lambda','var') || isempty(lambda)
+  lambda = 0;
+end
 
 % check
 assert(all(~isnan(X(:))));
@@ -49,13 +58,13 @@ if any(bad)
 
   f = zeros(size(X,2),size(X,1));
   lastwarn('');
-  f(good,:) = (X(:,good)'*X(:,good))\X(:,good)';
+  f(good,:) = (X(:,good)'*X(:,good) + lambda*eye(sum(good)))\X(:,good)';
   assert(isempty(lastwarn),lastwarn);
 
 else
 
   lastwarn('');
-  f = (X'*X)\X';
+  f = (X'*X + lambda*eye(size(X,2)))\X';
   assert(isempty(lastwarn),lastwarn);
 
 end
