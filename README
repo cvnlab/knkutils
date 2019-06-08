@@ -219,6 +219,7 @@ math/
   circulardiff - difference between two values defined in a circular domain
   circularshiftandsum - take a vector, circularly shift it multiple times, and sum
   clipoutliers - clip the outliers of a matrix
+  constructpathonsphere - connect points on the unit sphere
   countinstances - count how many 1s, 2s, etc. are in a matrix
   divnorm - apply divisive normalization to a matrix
   matchgain - figure out scalar factor to match one set of data to another
@@ -263,6 +264,7 @@ stats/
   calcoptimalhistbins - calculate the optimum number of bins to use for hist.m
   calcrbflikelihood - calculate likelihood of a set of points given a collection of RBFs
   calcrectlikelihood - calculate likelihood of a set of points given a collection of directions (half-squared responses)
+  calcridgeregressionlambda - determine lambda parameter for ridge regression in a controlled way
   calcrobustsummary - calculate the median and one-half of the central 68% range
   calcsurfaceareanball - calculate surface area of a unit n-ball
   centerofmass - calculate the center-of-mass of a matrix
@@ -276,6 +278,7 @@ stats/
   evaldivnorm - evaluate divisive-normalization function at some values
   evalgaussian1d - evaluate 1D Gaussian function at some coordinates
   evalgaussian2d - evaluate 2D Gaussian function at some coordinates
+  evalgaussian2doriented - evaluate 2D Gaussian function (that can be rotated) at some coordinates
   evalgaussian3d - evaluate 3D Gaussian function at some coordinates
   evalgeneralizedgaussian - evaluate generalized Gaussian pdf
   filter2subsample - apply filter2 and then subsample the result
@@ -287,6 +290,7 @@ stats/
   fitdivnorm - fit divisive-normalization function
   fitgaussian1d - fit 1D Gaussian function
   fitgaussian2d - fit 2D Gaussian function
+  fitgaussian2doriented - fit 2D Gaussian function that can be rotated
   fitgaussian3d - fit 3D Gaussian function
   fitl1line - perform linear regression but use an L1-error metric 
   fitline2derror - fit a line to a set of 2D points using an error metric that is sensitive to both x and y
@@ -489,6 +493,7 @@ graphic/
 
 mri/
   calchrfpeak - estimate the peak (positive or negative) value of an HRF
+  changevolumeres - change the resolution of a volume while preserving field-of-view
   computetemporalsnr - compute the stability of a series of 3D volumes over time
   constructhrfmodeldct - return a matrix of DCT-II basis functions for modeling HRFs
   constructhrfmodeldelta - return a matrix of delta basis functions for modeling HRFs
@@ -508,6 +513,7 @@ mri/
   inttofs - go from our internal space to FreeSurfer space
   motioncorrectvolumes - perform motion correction for some volumes
   preconditionvolume - precondition a 3D volume by clipping outliers and removing low-frequency signal variations
+  quantifymotionparameters - compute an intuitive summary metric of rigid-body motion during a run
   settr_nii - set the TR in the header information of an NII structure
   surfaceslice2 - figure out information relating voxels to vertices
   undistortvolumes - resample volumes in order to correct for motion and distortion
