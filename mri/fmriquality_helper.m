@@ -47,6 +47,8 @@ end
 im = im / numtodo;  % range is 0 to 1
 imwrite(uint8(255*im(:,:,1)),flipud(hot(256)),sprintf(filename,figuredir,sl));
 
+% clean up
+rmdirquiet(tn);
 
 
 
