@@ -261,9 +261,9 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 % return <timekeys> as a record of the input detected.  the format is {(time button;)*}.
 %   where button is a string (single button depressed) or a cell vector of strings (multiple
 %   buttons depressed).  for regular button presses, the recorded time is what KbCheck returns.
-%   the very first entry in <timekeys> is special ('absolutetimefor0') and indicates the absolute
-%   time corresponding to the time of the first frame; all other time entries are relative to the
-%   time of the first frame.
+%   the first entry in <timekeys> is special ('absolutetimefor0') as it indicates the 
+%   absolute time corresponding to the time of the first frame, as reported by MATLAB's
+%   now.m function. The remaining time entries are relative to the time of the first frame.
 % return <digitrecord> as {A B C} where A is a 1 x size(<frameorder>,2) vector with the digit (0-9)
 %   shown on each frame (only the onsets of digits are recorded; the rest of the entries are NaN),
 %   and B and C are auxiliary items that are useful for replicating the exact behavior (through
@@ -307,6 +307,9 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   So it is important to test your particular setup!
 %
 % history:
+% 2019/01/05 - change absolutetime0 to be matlab's now function!
+% 2018/10/25 - tweak to glitch-compensation mechanism: use 0 in the Flip command.
+% 2018/10/16 - implement reporttext and the case of dot color changes (fixationorder case 2)
 % 2018/09/14 - extend fixationsize to the {[A B] COLOR} case
 % 2018/07/27 - tweak to glitch-compensation mechanism. this is tricky business.
 % 2018/05/25 - add <stereocontrol> as input and <stereoflip> as input
@@ -731,6 +734,10 @@ trialoffsets = [];
 digitframe = [];
 digitpolarity = [];
 when = 0;
+GetSecs;
+now;
+ceil(1);
+fprintf('');
 oldPriority = Priority(MaxPriority(win));
 HideCursor;
 mfi = Screen('GetFlipInterval',win);  % re-use what was found upon initialization!
@@ -1049,8 +1056,13 @@ end
   %        end
   %    end
 
-% wait until next vertical retrace (to reduce run-to-run variability)
-Screen('Flip',win);
+% removed on Dec 30 2018 (we need to go as fast as we can after the scanner trigger).
+% note that before removing this, the detected trigger time is not quite the same
+% as the recorded trigger time below!
+if 0 
+  % wait until next vertical retrace (to reduce run-to-run variability)
+  Screen('Flip',win);
+end
 
 % issue the trigger and record it
 if ~isempty(triggerfun)
@@ -1063,11 +1075,12 @@ framecnt = 0;
 for frame=1:frameskip:size(frameorder,2)+1
   framecnt = framecnt + 1;
   frame0 = floor(frame);
+  reporttext = '';
 
   % we have to wait until the last frame is done.  so this is how we hack that in.
   if frame0==size(frameorder,2)+1
     while 1
-      if GetSecs >= when
+      if GetSecs >= whendesired
         getoutearly = 1;
         if ~isempty(triggerfun)
           feval(triggerfun);
@@ -1230,6 +1243,12 @@ for frame=1:frameskip:size(frameorder,2)+1
     if fixationcase==0
       texture = Screen('MakeTexture',win,cat(3,fixationimage,uint8(fixationorder(1+frame0)*fixationalpha)));
     else
+      % report to command window whenever the fixation dot color changes!
+      if frame0~=1
+        if fixationorder(1+frame0) ~= fixationorder(1+frame0-1)
+          reporttext = sprintf('EVENT %s\n',mat2str(clock));
+        end
+      end
       texture = Screen('MakeTexture',win,cat(3,fixationimage(:,:,:,-fixationorder(1+frame0)),uint8(fixationorder(end)*fixationalpha)));
     end
   end
@@ -1362,15 +1381,25 @@ for frame=1:frameskip:size(frameorder,2)+1
       end
   
       % issue the flip command and record the empirical time
-      [VBLTimestamp,StimulusOnsetTime,FlipTimestamp,Missed,Beampos] = Screen('Flip',win,when);
+      [VBLTimestamp,StimulusOnsetTime,FlipTimestamp,Missed,Beampos] = Screen('Flip',win,  0);
 %      sound(sin(1:2000),100);
       timeframes(framecnt) = VBLTimestamp;
+      
+      % get matlab now for the very first stimulus frame
+      if framecnt==1
+        absnowtime = now;
+      end
+      
+      % report text to command window?
+      if ~isempty(reporttext)
+        fprintf(reporttext);
+      end
 
       % if we missed, report it
 % OLD WAY
 %      if Missed > 0 & when ~= 0
 % NEW WAY:
-      if when ~=0 && (VBLTimestamp - whendesired) > (mfi * (1/2))
+      if when ~= 0 && (VBLTimestamp - whendesired) > (mfi * (1/2))
         glitchcnt = glitchcnt + 1;
         didglitch = 1;
       else
@@ -1510,7 +1539,8 @@ timeframes = timeframes - starttime;
 if size(timekeys,1) > 0
   timekeys(:,1) = cellfun(@(x) x - starttime,timekeys(:,1),'UniformOutput',0);
 end
-timekeys = [{starttime 'absolutetimefor0'}; timekeys];
+  % OLD: we used to report starttime for 'absolutetimefor0'
+timekeys = [{absnowtime 'absolutetimefor0'}; timekeys];
 
 % report basic timing information to stdout
 fprintf('we had %d glitches!\n',glitchcnt);
