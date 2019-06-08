@@ -1,12 +1,12 @@
 function [images,maskimages] = showmulticlass(outfile,offset,movieflip,frameduration,fixationinfo,fixationsize, ...
   triggerfun,ptonparams,soafun,skiptrials,images,setnum,isseq,grayval,iscolor, ...
   numrep,con,existingfile,dres,triggerkey,framefiles,trialparams,eyelinkfile,maskimages,specialoverlay, ...
-  stimulusdir,frameevents,framefuncs,setupscript,cleanupscript)
+  stimulusdir,frameevents,framefuncs,setupscript,cleanupscript,stereoflip)
 
 % function [images,maskimages] = showmulticlass(outfile,offset,movieflip,frameduration,fixationinfo,fixationsize, ...
 %   triggerfun,ptonparams,soafun,skiptrials,images,setnum,isseq,grayval,iscolor, ...
 %   numrep,con,existingfile,dres,triggerkey,framefiles,trialparams,eyelinkfile,maskimages,specialoverlay, ...
-%   stimulusdir,frameevents,framefuncs,setupscript,cleanupscript)
+%   stimulusdir,frameevents,framefuncs,setupscript,cleanupscript,stereoflip)
 %
 % <outfile> is the .mat file to save results to
 % <offset> is horizontal and vertical offset for display purposes (see ptviewmovie.m)
@@ -38,7 +38,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 %                [53 54] or [56 57 58] or [59 60 61] or [62 63 64 65] or [66] or [109 110] or [67 68 69 70 71 72] or
 %                [73 74 75 76 77] or [78 79 80 81] or [82 83 84 85 86 87  88] or [89 90 91 92 93 94] or 
 %                [95 96 97 98 99 100] or [101 102 103 104 105 106] or [107] or [108 112 113 114] or [111] or [115] or 
-%                [116] or [117] or [118 121] or [119] or [120]
+%                [116] or [117] or [118 121] or [119] or [120] or [122] or [123 124 125 126] or [127 128 129 130]
 % <setnum> (optional) is
 %   1 means the original 31 stimulus classes [15 frames, 3s / 3s]
 %   2 means the horizontally-modulated random space stimuli plus small-scale checkerboard and letters [15 frames, 3s / 3s]
@@ -162,6 +162,20 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 %   118 is wnC10.
 %   119 is retinotopyECOG
 %   121 is wnC11 (like wnC10 but just 6 rings)
+%   122 is wnC12 (texture)
+%   123 is wnC13 (odc: LVF)
+%   124 is wnC13 (odc: RVF)
+%   125 is wnC13 version 2 (odc LVF with block design)
+%   126 is wnC13 version 2 (odc RVF with block design)
+%   127 is readingF (first run type (50 distinct), keyed on date)
+%   128 is readingF (second run type (other 50 distinct), keyed on date)
+%   129 is readingFalt (first run type (50 distinct), keyed on date)
+%   130 is readingFalt (second run type (other 50 distinct), keyed on date)
+%   [131 S E R T] where S is the subject number between 1-8, E is the session
+%     number between 1-40, R is the run number between 1-12, and T is either
+%     0 meaning do the regular run or N (between 1 and 75) meaning do the
+%     run starting at trial N. However, a special case is N being equal to
+%     1, 2, 3, or 4, in which case the run is identical to the regular run.
 %   default: 1.
 % <isseq> (optional) is whether to do the special sequential showing case.  should be either 0 which
 %   means do nothing special, or a positive integer indicating which frame to use.  if a positive
@@ -198,10 +212,16 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 % <framefuncs>  (optional) is the input to ptviewmovie.m
 % <setupscript> (optional) is the input to ptviewmovie.m
 % <cleanupscript> (optional) is the input to ptviewmovie.m
+% <stereoflip> (optional) is the input to ptviewmovie.m.  Default: 0.
 %
 % show the stimulus and then save workspace (except the variable 'images') to <outfile>.
 %
 % history:
+% 2019/01/05 - implement 131
+% 2018/10/01 - implement 129-130
+% 2018/09/19 - implement 127-128
+% 2018/05/31 - implement 123, 124, 125, 126 and <stereoflip>
+% 2018/02/25 - implement 122
 % 2017/12/10 - implement 121
 % 2017/10/23 - implement 120
 % 2017/07/10 - implement 119
@@ -260,6 +280,8 @@ infofile_readingD_US = fullfile(stimulusdir,'multiclassinfo_readingD_US.mat');
 infofile_readingD_ECOG = fullfile(stimulusdir,'multiclassinfo_readingD_ECOG.mat');
 infofile_readingD_ECOGslower = fullfile(stimulusdir,'multiclassinfo_readingD_ECOGslower.mat');
 infofile_readingE = fullfile(stimulusdir,'multiclassinfo_readingE.mat');
+infofile_readingF = fullfile(stimulusdir,'multiclassinfo_readingF.mat');
+infofile_readingFalt = fullfile(stimulusdir,'multiclassinfo_readingFalt.mat');
 infofile_subadd = fullfile(stimulusdir,'multiclassinfo_subadd.mat');
 infofileB = fullfile(stimulusdir,'multiclassinfoB.mat');
 infofile_wn = fullfile(stimulusdir,'multiclassinfo_wn.mat');
@@ -273,9 +295,11 @@ infofile_wnB7 = fullfile(stimulusdir,'multiclassinfo_wnB7.mat');
 infofile_wnB8 = fullfile(stimulusdir,'multiclassinfo_wnB8.mat');
 infofile_wnC10 = fullfile(stimulusdir,'multiclassinfo_wnC10.mat');
 infofile_wnC11 = fullfile(stimulusdir,'multiclassinfo_wnC11.mat');
+infofile_wnC12 = fullfile(stimulusdir,'multiclassinfo_wnC12.mat');
 infofile_wnD = fullfile(stimulusdir,'multiclassinfo_wnD.mat');
 infofile_version2 = fullfile(stimulusdir,'multiclassinfo_version2.mat');
 infofile_hrf = fullfile(stimulusdir,'multiclassinfo_hrf.mat');
+infofile_nsd = fullfile(stimulusdir,'nsd_expdesign.mat');
 switch setnum(1)
 case {1 2 3 6 7 8}
   stimfile = fullfile(stimulusdir,'workspace.mat');  % where the 'images' variables can be obtained
@@ -309,6 +333,10 @@ case {108 112 113 114}
   stimfile = fullfile(stimulusdir,'workspace_readingD.mat');
 case {116}
   stimfile = fullfile(stimulusdir,'workspace_readingE.mat');
+case {127 128}
+  stimfile = fullfile(stimulusdir,'workspace_readingF.mat');
+case {129 130}
+  stimfile = fullfile(stimulusdir,'workspace_readingFalt.mat');
 case {115}
   stimfile = fullfile(stimulusdir,'workspace_readingDoutline.mat');
 case {119}
@@ -326,6 +354,10 @@ case {12 13}
   stimfile = fullfile(stimulusdir,'workspace_wnC.mat');
 case {118 121}
   stimfile = fullfile(stimulusdir,'workspace_wnC10.mat');
+case {123 124 125 126}
+  stimfile = fullfile(stimulusdir,'workspace_wnC13.mat');
+case {122}
+  stimfile = fullfile(stimulusdir,'workspace_wnC12.mat');
 case {14}
   stimfile = fullfile(stimulusdir,'workspace_wnD.mat');
 case {15}
@@ -366,6 +398,8 @@ case {89 90 91 92 93 94}
   stimfile = fullfile(stimulusdir,'workspace_retinotopyCaltsmash.mat');
 case {101 102 103 104 105 106}
   stimfile = fullfile(stimulusdir,'workspace_retinotopyCaltsmashWORDS.mat');
+case {131}
+  stimfile = fullfile(stimulusdir,'nsd_stimuli.hdf5');
 end
 stimfileextra = fullfile(stimulusdir,'workspace_convert10.mat');
 
@@ -425,6 +459,9 @@ end
 if ~exist('cleanupscript','var') || isempty(cleanupscript)
   cleanupscript = [];
 end
+if ~exist('stereoflip','var') || isempty(stereoflip)
+  stereoflip = 0;
+end
 if ~isempty(existingfile)
   efile = load(existingfile,'framedesign','classorder','fixationorder','trialoffsets','digitrecord');
 end
@@ -444,23 +481,124 @@ end
 
 if ~exist('images','var') || isempty(images)
 
-  % load images
-  if exist('maskfile','var')
-    load(stimfile,'images');
-    load(maskfile,'maskimages');
-  else
-    load(stimfile,'images','maskimages');
-  end
-  if ~exist('maskimages','var')
-    maskimages = {};
-  end
-  if setnum(1)==6  % in this case, we have to use the newer versions of certain classes
-    images0 = loadmulti(stimfileextra,'images');
-    wh = cellfun(@(x) ~isempty(x),images0);
-    images(wh) = images0(wh);
-    clear images0;
-  end
+  switch setnum(1)
   
+  % this is a special case. here we do all the dirty work for this experiment,
+  % every time the experiment script is called.
+  case 131
+  
+    % quick sanity check
+    assert(setnum(2)>=1 && setnum(2)<=8);
+    assert(setnum(3)>=1 && setnum(3)<=40);
+    assert(setnum(4)>=1 && setnum(4)<=12);
+    assert(setnum(5)>=0 && setnum(5)<=75);
+
+    % load the experiment design information
+    a1 = load(infofile_nsd);
+
+    % how many stim trials in each of the 12 runs?
+    numstimperrun = repmat([63 62],[1 6]);
+
+    % figure out the ordering in the current run.
+    % 1 x 63(or 62) with the sequence of stimulus trials (indices relative to 10k)
+    curordering = a1.masterordering((setnum(3)-1)*750+(1:750));
+    curordering = curordering(sum(numstimperrun(1:setnum(4)-1)) + (1:numstimperrun(setnum(4))));
+
+    % figure out master list, 1 x N with the sorted distinct list of images (relative to 10k) being shown in this run
+    imagelist = flatten(unique(curordering));
+
+    % just like curordering except indices are now relative to the imagelist
+    curorderingREDUCED = calcposition(imagelist,curordering);
+
+    % construct trialpattern (75 trials x N unique images)
+    trialpattern = zeros(75,length(imagelist));
+    cnt = 1;
+    for p=1:size(trialpattern,1)
+      if a1.stimpattern(setnum(3),setnum(4),p)
+        trialpattern(p,curorderingREDUCED(cnt)) = 1;
+        cnt = cnt + 1;
+      end
+    end
+    assert(cnt-1 == length(curorderingREDUCED));
+    
+    % OPTIONAL: perform a partial run
+    if (setnum(5) ~= 0) && (setnum(5) > 4)
+
+      % We know the first three trials are blank. So concatenate those with the desired trials.
+      trialpattern = cat(1,trialpattern(1:3,:),trialpattern(setnum(5):end,:));
+
+    end
+
+    %% visualize to check it
+    %figure; imagesc(trialpattern);
+    %figure; plot(sum(trialpattern,2),'ro');
+
+    % construct the "on-pattern". all trials are 4 seconds (at 10 frames per second).
+    onpattern = [ones(1,30) zeros(1,10)];
+
+    % an alternative to the next section
+    if 0
+      images = loadmulti('/research/nsd/cartoonimages.mat','images');  % 425 x 425 x 3 x 20, uint8
+      images = repmat(images,[1 1 1 ceil(length(imagelist)/size(images,4))]);
+      images = images(:,:,:,1:length(imagelist));
+      images = splitmatrix(images,4);
+      images{1} = repmat(images{1},[1 1 1 2]);
+    end
+
+    % load the actual images
+    images = cell(1,length(imagelist));
+    for p=1:length(imagelist)
+      fprintf('loading image %d of %d.\n',p,length(imagelist));
+
+      % this is the ID relative to the full 73k image set
+      finalimageid = a1.subjectim(setnum(2),imagelist(p));
+      
+      % h5disp(stimfile);
+      % HDF5 croppedImgBrick.hdf5 
+      % Group '/' 
+      %     Dataset 'imgBrick' 
+      %         Size:  3x425x425x73000
+      %         MaxSize:  3x425x425x73000
+      %         Datatype:   H5T_STD_U8LE (uint8)
+      %         ChunkSize:  []
+      %         Filters:  none
+      %         FillValue:  0
+      
+      % load one image (R x C x 3, uint8)
+      images{p} = permute(h5read(stimfile,'/imgBrick',[1 1 1 finalimageid],[3 425 425 1]),[3 2 1]);
+      
+      % hack so that ptviewmovie.m knows this is the color case
+      if p==1
+        images{p} = repmat(images{p},[1 1 1 2]);
+      end
+      
+    end
+    
+    % clean up
+    clear a1;
+  
+  % this is the default case
+  otherwise
+
+    % load images
+    if exist('maskfile','var')
+      load(stimfile,'images');
+      load(maskfile,'maskimages');
+    else
+      load(stimfile,'images','maskimages');
+    end
+    if ~exist('maskimages','var')
+      maskimages = {};
+    end
+    if setnum(1)==6  % in this case, we have to use the newer versions of certain classes
+      images0 = loadmulti(stimfileextra,'images');
+      wh = cellfun(@(x) ~isempty(x),images0);
+      images(wh) = images0(wh);
+      clear images0;
+    end
+
+  end
+    
   % resize if desired
   if ~isempty(dres) && length(dres)==2
     tic;
@@ -690,6 +828,73 @@ else
       for p=12+(1:6)
         for rep=1:12
           framedesign{p}(rep,:) = [permutedim(1:35)];
+        end
+      end
+    end
+  case {123 124}
+    if isseq
+      die;
+    else
+      framedesign = {};
+      if setnum(1)==123
+        stim0 = [1 2];   % LVF stimuli (Leye, Reye)
+      else
+        stim0 = [3 4];   % RVF stimuli (Leye, Reye)
+      end
+      for rep=1:30  % 30 trials, random unique set of 20 (of 35 frames)
+        framedesign{stim0(1)}(rep,:) = subscript(permutedim(1:35),{1 1:20});
+      end
+      framedesign{stim0(2)} = permutedim(framedesign{stim0(1)},1);  % match in the other eye
+    end
+  case {125 126}
+    if isseq
+      die;
+    else
+    
+      % init
+      framedesign = {};
+      if setnum(1)==125
+        stim0 = [1 2];   % LVF stimuli (Leye, Reye)
+      else
+        stim0 = [3 4];   % RVF stimuli (Leye, Reye)
+      end
+      
+      % first, generate the 6 trials (24 s), enforcing no two successive same
+      temp = [];
+      for rep=1:6
+        temp(rep,:) = randintrange(1,35,[1 240],1);
+      end
+
+      % split the 6 trials into 12 effective trials
+      for rep=1:6
+        framedesign{stim0(1)}((rep-1)*2+(1:2),:) = reshape(temp(rep,:),120,2)';
+      end
+
+      % reorder the 6 trials and do it again
+      temp = permutedim(temp,1);
+      for rep=1:6
+        framedesign{stim0(2)}((rep-1)*2+(1:2),:) = reshape(temp(rep,:),120,2)';
+      end
+      
+    end
+  case {122}
+    if isseq
+      framedesign = {};
+      for p=1:10
+        framedesign{p} = isseq;
+      end
+    else
+      framedesign = {};
+      framecolordesign = {};
+      for p=1:10
+        targetpresent = permutedim([ones(1,4) zeros(1,4)]);  % exactly 4 of 8 trials has the contrast-decrement target
+        for rep=1:8
+          framedesign{p}(rep,:) = [subscript(permutedim(1:25),{1 1:18})];
+          if targetpresent(rep)
+            framecolordesign{p}(rep,:) = copymatrix(ones(1,18),1+ceil(rand*16),0.5);  % 50% alpha for exactly one frame (not first, not last)
+          else
+            framecolordesign{p}(rep,:) = ones(1,18);
+          end
         end
       end
     end
@@ -1276,6 +1481,18 @@ else
         framedesign{p} = ones(1,4*4);
       end
     end
+  case {127 128 129 130}
+    if isseq
+      framedesign = {};
+      for p=1:100
+        framedesign{p} = isseq;
+      end
+    else
+      framedesign = {};
+      for p=1:100
+        framedesign{p} = repmat(ones(1,10),[2 1]);
+      end
+    end
   case {112}
     if isseq
       framedesign = {};
@@ -1460,6 +1677,18 @@ else
         framedesign{p} = stimrec(mod2(setnum(2),9),p)*ones(1,9);
       end
     end
+  case {131}
+    if isseq
+      framedesign = {};
+      for p=1:length(imagelist)
+        framedesign{p} = isseq;
+      end
+    else
+      framedesign = {};
+      for p=1:length(imagelist)
+        framedesign{p} = repmat(ones(1,30),[sum(trialpattern(:,p)) 1]);
+      end
+    end
   case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119}
     % N/A
   end
@@ -1485,7 +1714,12 @@ if isseq
   case {121}
     trialpattern = eye(6);
     onpattern = [1];
-  case {82 83 84 85 86 87  88}
+  case {122}
+    trialpattern = eye(10);
+    onpattern = [1];
+  case {123 124 125 126}
+    die;
+ case {82 83 84 85 86 87  88}
     trialpattern = eye(45);
     onpattern = [1];
   case {37}
@@ -1554,6 +1788,9 @@ if isseq
   case {116}
     trialpattern = eye(133);
     onpattern = [1];
+  case {127 128 129 130}
+    trialpattern = eye(100);
+    onpattern = [1];
   case {67 68 69 70 71 72}
     trialpattern = eye(41+5);
     onpattern = [1];
@@ -1577,6 +1814,9 @@ if isseq
     onpattern = [1];
   case {45}
     trialpattern = eye(30);
+    onpattern = [1];
+  case {131}
+    trialpattern = eye(length(imagelist));
     onpattern = [1];
   case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119}
     % N/A
@@ -1624,6 +1864,10 @@ else
     load(infofile_readingD,'trialpattern','onpattern');
   case {116}
     load(infofile_readingE,'trialpattern','onpattern');
+  case {127 128}
+    load(infofile_readingF,'trialpattern','onpattern');
+  case {129 130}
+    load(infofile_readingFalt,'trialpattern','onpattern');
   case {112}
     load(infofile_readingD_US,'trialpattern','onpattern');
     temp = zeros(size(trialpattern,1),24);    % NOTE: Here, we insert fake columns for stim #1 and #3
@@ -1671,6 +1915,8 @@ else
     load(infofile_wnC10,'trialpattern','onpattern');
   case {121}
     load(infofile_wnC11,'trialpattern','onpattern');
+  case {122}
+    load(infofile_wnC12,'trialpattern','onpattern');
   case {30 31 32 33}
     load(infofile_wnB8,'trialpattern','onpattern');
   case {37}
@@ -1763,7 +2009,7 @@ else
       cnt = cnt + alldurations(ecnt);
       ecnt = ecnt + 1;
     end
-    
+
   case {35 36}
     load(infofile_wnB8,'trialpattern','onpattern');
     onpattern = zeros(1,24);
@@ -1794,6 +2040,25 @@ else
     load(infofile_version2,'trialpattern','onpattern');
   case 9
     load(infofile_hrf,'trialpattern','onpattern');
+  case {123 124}
+    onpattern = [ones(1,20) zeros(1,20)];
+    trialpattern = zeros(4+3*30+4,2);
+    actualtrials = permutedim(repmat([0 1 2],[1 30]));  % 30 trials of each type (blank, L, R)
+    for zzz=1:length(actualtrials)
+      if actualtrials(zzz) ~= 0
+        trialpattern(4+zzz,actualtrials(zzz)) = 1;
+      end
+    end
+  case {125 126}
+    onpattern = [ones(1,120)];
+    trialpattern = zeros(1+6*2*3+1,2);  % 3 "trials" within each real trial. 2 conditions, 6 repeats. begin and end 12-s rest.
+    actualtrials = permutedim(repmat([1 2],[1 6]));
+    for zzz=1:length(actualtrials)
+      trialpattern(1+(zzz-1)*3+1,actualtrials(zzz)) = 1;  % 12-s
+      trialpattern(1+(zzz-1)*3+2,actualtrials(zzz)) = 1;  % 12-s
+    end
+  case {131}
+    % N/A because we calculated this above already
   case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119}
     % N/A
   end
@@ -1922,6 +2187,10 @@ else
     classorder = [1:24];
   case {116}
     classorder = [1:133];
+  case {127 129}
+    classorder = sort(picksubset(1:100,[2 1],datenum(date)));
+  case {128 130}
+    classorder = sort(picksubset(1:100,[2 2],datenum(date)));
   case {112 113 114 115}
     classorder = setdiff(1:24,[1 3]);
   case {59 60 61}
@@ -1978,6 +2247,12 @@ else
     classorder = [1:18];
   case {121}
     classorder = [12+(1:6)];
+  case {122}
+    classorder = [1:10];
+  case {123 125}
+    classorder = [1:2];
+  case {124 126}
+    classorder = [3:4];
   case {30 32 35}
     classorder = [1:31 63:2:69];
   case {37}
@@ -2018,11 +2293,13 @@ else
     classorder = [51:69 72:73];
   case 9
     classorder = [1];
+  case 131
+    classorder = 1:length(imagelist);
   case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119}
     % N/A but do this just so the below line won't fail
     classorder = [];
   end
-  if ~isseq && ~ismember(setnum(1),[26 109 110 111])  % 109-111 is special. we pre-specify, so no randomization etc.
+  if ~isseq && ~ismember(setnum(1),[26 109 110 111 131])  % 109-111,131 is special. we pre-specify, so no randomization etc.
     classorder = permutedim(classorder);
     
     % make sure beginning and end are stimulus trials and make sure no two consecutive blank trials
@@ -2552,7 +2829,10 @@ else
       cur = 1;  % start with the first fixation dot color
       for q=1:length(fixationorder)
         if fixationorder(q)==1
-          cur = firstel(permutedim(setdiff(1:size(fixationinfo{1},1),cur)));  % change to a new color
+          temp = permutedim(setdiff(1:size(fixationinfo{1},1),cur));
+          if ~isempty(temp)
+            cur = firstel(temp);  % change to a new color
+          end
         end
         fixationorder(q) = -cur;
       end
@@ -2584,7 +2864,7 @@ switch setnum(1)
 case {51 52 53 54 56 57 58 59 60 61 62 63 64 65 66 109 110 113 114 115  119}
 
   % figure out A [THIS IS VOODOO, WATCH OUT]
-  temp = strsplit(char(frameorder(1,:)),char(0));
+  temp = strsplitalt(char(frameorder(1,:)),char(0));
   A = zeros(size(frameorder,2),size(frameorder,2));  % liberal on rows, restrict later
   cnt = 0;
   trialcnt = 1;
@@ -2723,6 +3003,31 @@ otherwise
   trialtask = [];
 end
 
+% figure out stereoconrol
+switch setnum(1)
+
+case {123 124 125 126}
+
+  % init stereocontrol (by default, we show every frame in both eyes)
+  stereocontrol = 3*ones(1,size(frameorder,2));
+
+  % process each trial
+  for p=1:size(trialpattern,1)
+    if all(trialpattern(p,:)==0)
+      % in this case, we just allow default to go through
+    else
+      event = find(trialpattern(p,:));
+      stimclass = classorder(event);  % either 1 or 3 (Leye) or 2 or 4 (Reye)
+      stereocontrol((p-1)*length(onpattern) + find(onpattern)) = mod2(stimclass,2);
+    end
+  end
+
+otherwise
+
+  stereocontrol = [];
+
+end
+
 %%%%%%%%%%%%% figure out some last minute things
 
 if ~isempty(dres) && length(dres)==1
@@ -2779,13 +3084,15 @@ if iscolor
   [timeframes,timekeys,digitrecord,trialoffsets] = ptviewmovie(images, ...
     frameorder,framecolor,frameduration,fixationorder,fixationcolor,fixationsize,grayval,[],[], ...
       offset,choose(con==100,[],1-con/100),movieflip,scfactor,[],triggerfun,framefiles,[], ...
-      triggerkey,specialcon,trialtask,maskimages,specialoverlay,frameevents,framefuncs,setupscript,cleanupscript);
+      triggerkey,specialcon,trialtask,maskimages,specialoverlay,frameevents,framefuncs,setupscript, ...
+      cleanupscript,stereocontrol,stereoflip);
 else
     % OLD AND WASTEFUL: reshape(cat(3,images{:}),size(images{1},1),size(images{1},2),1,[])
   [timeframes,timekeys,digitrecord,trialoffsets] = ptviewmovie(images, ...
     frameorder,framecolor,frameduration,fixationorder,fixationcolor,fixationsize,grayval,[],[], ...
       offset,choose(con==100,[],1-con/100),movieflip,scfactor,[],triggerfun,framefiles,[], ...
-      triggerkey,specialcon,trialtask,maskimages,specialoverlay,frameevents,framefuncs,setupscript,cleanupscript);
+      triggerkey,specialcon,trialtask,maskimages,specialoverlay,frameevents,framefuncs,setupscript, ...
+      cleanupscript,stereocontrol,stereoflip);
 end
 
 % close out eyelink
