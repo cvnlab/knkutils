@@ -8,7 +8,7 @@ function [keytimes,badtimes,keybuttons] = ptviewmoviecheck(timeframes,timekeys,d
 %   counted as an actual keypress.  default: 1.
 % <badkey> (optional) is a character.  separately process entries in <timekeys>
 %   for which the first character matches <badkey>.  if [] do nothing special.
-%   default: [].
+%   default: [].  Can also be a cell vector of characters (any match is okay).
 % <deltatimeBAD> (optional) is like <deltatime> but for <badkey>.  default: 0.25.
 % <wanthide> (optional) is whether to make the two figure windows that we create
 %   invisible. Default: 0.
@@ -19,6 +19,7 @@ function [keytimes,badtimes,keybuttons] = ptviewmoviecheck(timeframes,timekeys,d
 % returned in <keybuttons>.
 %
 % history:
+% - 2018/10/29 - add <badkey> can be a cell vector
 % - 2015/02/28 - add <wanthide>
 % - 2014/09/16 - now return keybuttons as output
 % - 2014/06/12 - revamp to function behavior. now return useful outputs.
@@ -71,7 +72,7 @@ keybuttons = {};
 xvals = [];
 for p=1:size(timekeysB,1)
   if ~isequal(timekeysB{p,2},'absolutetimefor0') && ...
-     (isempty(badkey) || ~isequal(timekeysB{p,2}(1),badkey)) && ...
+     (isempty(badkey) || ~ismember(timekeysB{p,2}(1),badkey)) && ...
      (timekeysB{p,1}-oldkeytime > deltatime)     %%%REMOVED ~isequal(timekeysB{p,2},oldkey) ||  [this means all the same]
     keytimes = [keytimes timekeysB{p,1}];  % record
     keybuttons = [keybuttons {timekeysB{p,2}}];  % record
@@ -93,7 +94,7 @@ oldkey = ''; oldkeytime = -Inf; cnt = 0;
 badtimes = [];
 for p=1:size(timekeysB,1)
   if ~isequal(timekeysB{p,2},'absolutetimefor0') && ...
-     (~isempty(badkey) && isequal(timekeysB{p,2}(1),badkey)) && ...
+     (~isempty(badkey) && ismember(timekeysB{p,2}(1),badkey)) && ...
      (timekeysB{p,1}-oldkeytime > deltatimeBAD)  % if we have found a new key
     badtimes = [badtimes timekeysB{p,1}];  % record
     set(straightline(timekeysB{p,1},'v','k-'),'Color',[.7 .7 .7]);
