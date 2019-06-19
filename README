@@ -494,6 +494,7 @@ graphic/
 mri/
   calchrfpeak - estimate the peak (positive or negative) value of an HRF
   changevolumeres - change the resolution of a volume while preserving field-of-view
+  computebrickandindices - determine a brick into a 3D binary volume
   computetemporalsnr - compute the stability of a series of 3D volumes over time
   constructhrfmodeldct - return a matrix of DCT-II basis functions for modeling HRFs
   constructhrfmodeldelta - return a matrix of delta basis functions for modeling HRFs
