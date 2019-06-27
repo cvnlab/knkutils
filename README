@@ -386,6 +386,7 @@ imageprocessing/
   imcropfiles - manually define a crop region and then apply to one or more image files
   imreadmulti - load in multiple images
   imrectsquare - enforce square and integer crop to an imrect
+  imrectimagecrop - return a valid image crop from imrect
   imresizedifferentfov - resize an image but use a different field-of-view
   imresizememory - call imresize on a bunch of images, minimizing memory usage
   imwritemulti - write multiple images to multiple files
