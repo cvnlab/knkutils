@@ -3,10 +3,11 @@ function f = calcposition(list,x)
 % function f = calcposition(list,x)
 %
 % <list> is a vector with unique elements (must be positive integers)
-% <x> is a vector whose elements are in <list>.
+% <x> is a vector or matrix whose elements are in <list>.
 %   elements can be in any order and repeats are okay.
 %
-% return a vector the same length as <x> with indices relative to <list>.
+% return a matrix with the same dimensionality as <x>
+% consisting of indices relative to <list>.
 %
 % example:
 % isequal(calcposition([5 3 2 4],[2 2 5]),[3 3 1])
@@ -19,7 +20,7 @@ xrank(list) = 1:length(list);
 f = xrank(x);
 
 % sanity check
-assert(~any(isnan(f)),'<list> does not subsume <x>');
+assert(~any(isnan(f(:))),'<list> does not subsume <x>');
 
 
 
