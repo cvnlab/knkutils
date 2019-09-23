@@ -6,11 +6,14 @@ function f = matchfiles(patterns,sorttype)
 %   (1) a string that matches zero or more files or directories (wildcards '*' okay)
 %   (2) the empty matrix []
 %   (3) a cell vector of zero or more things like (1) or (2)
-% <sorttype> (optional) is how to sort in each individual match attempt.
+% <sorttype> (optional) is how to sort in each INDIVIDUAL match attempt.
 %   't' means sort by time (newest first)
 %   'tr' means sort by time (oldest first)
 %   default is [], which means to sort alphabetically by explicitly using MATLAB's sort function.
 %   (note that MATLAB's sort function may sort differently than UNIX's ls function does!)
+%   Note that the sorting does NOT break the order of cell vector elements; for example,
+%   if A, B, or C are wildcards, then {A B C} still has the matched elements of A before
+%   the matched elements of B, which are still before the matched elements of C.
 %
 % return a cell vector of strings containing paths to the matched files and/or directories.
 % if there are no matches for an individual match attempt, we issue a warning.
@@ -26,6 +29,8 @@ function f = matchfiles(patterns,sorttype)
 % same limitations.
 %
 % history:
+% 2019/09/23 - MAJOR BUG. The intention is that individual elements of a cell vector
+%              get their own order in the results. We have fixed the code such that this is true.
 % 2018/12/22 - we now return duplicates and issue a warning if duplicates are found.
 % 2017/01/31 - switch to using Keith Jamison's fullfilematch.m implementation
 % 2011/09/28 - if ls returns too many files, resort to alternative.  also, the alternative mode now allows sorttype to be specified.
@@ -44,9 +49,10 @@ end
 f = fullfilematch(patterns,[],sorttype);
 return;
 
-%%%%%%%%%%%%%%%% CLONE OF fullfilematch.m from Keith Jamison
+%%%%%%%%%%%%%%%% CLONE OF fullfilematch.m from Keith Jamison, but with modifications
 
 function files = fullfilematch(filestrings,case_sensitive,sorttype)
+
 % function files = fullfilematch(filestrings,[case_sensitive=true],[sorttype=''])
 %
 % Find files with wildcard matching.
@@ -74,6 +80,15 @@ function files = fullfilematch(filestrings,case_sensitive,sorttype)
 % KJ Update 10/18/2016: Overhaul to allow wildcards in middle of path, and
 %   to add sorting options (for use with cvnlab code)
 % KJ Update 12/14/2016: Assume default directory='.' (pwd)
+
+% Handle the case of cell vectors up front in order to sure that order is preserved.
+if iscell(filestrings)
+  files = {};
+  for p=1:length(filestrings)
+    files = [files; fullfilematch(filestrings{p},case_sensitive,sorttype)];
+  end
+  return;
+end
 
 if(nargin < 2 || ~exist('case_sensitive','var') || isempty(case_sensitive))
     case_sensitive = true;

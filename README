@@ -10,6 +10,7 @@ in your MATLAB startup.m file.
 Below we document major code changes.  Minor code changes and tweaks that have no significant impact are not mentioned here (e.g. things like cosmetic adjustments, code speed-ups, making functions more general by adding optional input arguments, fixing bugs that would have result in code crashes, etc.).  Major changes include things that make the code backwards-incompatible and things that change actual analysis results.
 
 History of major code changes:
+2019/09/23 - major bug fix to matchfiles.m.  previously the order of cell vector elements was not respected.  now order is respected.
 2018/12/22 - matchfiles.m now RETURNS any duplicate filename matches. This changes past behavior.
 2018/12/22 - to resolve function naming conflicts, we have done the following: (1) completely removed the function called count.m, (2) completely removed the function called discretize.m, (3) renamed the function strsplit.m to strsplitalt.m
 2014/07/31 - in constructpolynomialmatrix.m, we now make the polynomials orthogonal and unit length. this changes previous behavior!
