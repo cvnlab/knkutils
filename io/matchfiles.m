@@ -81,15 +81,6 @@ function files = fullfilematch(filestrings,case_sensitive,sorttype)
 %   to add sorting options (for use with cvnlab code)
 % KJ Update 12/14/2016: Assume default directory='.' (pwd)
 
-% Handle the case of cell vectors up front in order to sure that order is preserved.
-if iscell(filestrings)
-  files = {};
-  for p=1:length(filestrings)
-    files = [files; fullfilematch(filestrings{p},case_sensitive,sorttype)];
-  end
-  return;
-end
-
 if(nargin < 2 || ~exist('case_sensitive','var') || isempty(case_sensitive))
     case_sensitive = true;
 end
@@ -110,6 +101,20 @@ if(isempty(filestrings))
     files = [];
     return;
 end
+
+
+
+% Handle the case of cell vectors up front in order to sure that order is preserved.
+if iscell(filestrings)
+  files = {};
+  for p=1:length(filestrings)
+    files = [files; fullfilematch(filestrings{p},case_sensitive,sorttype)];
+  end
+  return;
+end
+
+
+
 
 if(~iscell(filestrings))
     filestrings = {filestrings};
