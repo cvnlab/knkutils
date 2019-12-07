@@ -508,11 +508,13 @@ mri/
   dicomloaddir - load volumes and voxel-size information from a DICOM directory
   evaldoublegamma - evaluate double-gamma function at some x-values
   expdesignefficiency - calculate efficiency of an experimental design
+  fithrfgammadouble.m - fit a double-gamma function
   fmriquality - write figures to inspect the spatial quality of fMRI volumes
   fstoint - go from FreeSurfer space to our internal space
   getcanonicalhrf - return a canonical HRF (based on empirical data) for arbitrary duration and TR
   getsamplehrf - return some sample HRFs estimated from actual fMRI data
   homogenizevolumes - homogenize a set of 3D volumes by dividing by fitted 3D polynomials
+  hrfgammadouble.m - evaluate a double-gamma function
   inttofs - go from our internal space to FreeSurfer space
   motioncorrectvolumes - perform motion correction for some volumes
   preconditionvolume - precondition a 3D volume by clipping outliers and removing low-frequency signal variations
@@ -526,6 +528,8 @@ mri/
 pt/
   calcfixationdotchangeperformance - perform analysis of behavioral data for experiments involving dot change detection
   preparedigits - generate some digits and letters as uint8 images
+  pteyelinkoff - some eye-tracking related setup
+  pteyelinkon - some eye-tracking related setup
   pton - initialize PsychToolbox stuff
   ptoff - uninitialize PsychToolbox stuff
   ptviewimage - show one or more images and allow user to position the images
