@@ -108,5 +108,10 @@ end
 
 % finish up figure
 xlabel('time (seconds)');
-axis([floor(min(xvals)-1) ceil(max(xvals)+1) 0 1.6]);
+if isempty(xvals)
+  ax = axis;
+  axis([ax(1:2) 0 1.6]);
+else
+  axis([floor(min(xvals)-1) ceil(max(xvals)+1) 0 1.6]);
+end
 title(sprintf('inspection of timekeys (repeated keys within %.1f s are not shown)',deltatime));
