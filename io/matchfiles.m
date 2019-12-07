@@ -246,6 +246,7 @@ fpattern = strrep([fpattern fext],'*','.*');
 fpattern = strrep(fpattern,'?','.');
 fpattern = strrep(fpattern,'(','\(');
 fpattern = strrep(fpattern,')','\)');
+fpattern = strrep(fpattern,'+','\+');
 fpattern = ['^' fpattern '$'];
 
 removeprefix='';
