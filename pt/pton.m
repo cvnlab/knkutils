@@ -161,3 +161,5 @@ KbName('UnifyKeyNames');
 % 
 % Screen('Close',win);
 % Screen('CloseAll');
+%
+% Screen('Preference','SyncTestSettings',.0015,[],0.15);
