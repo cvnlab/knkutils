@@ -539,6 +539,9 @@ pt/
   runretinotopy - script for retinotopy experiment
   showmulticlass - helper function for various experiments
 
+external/   [code obtained from elsewhere]
+  hist2d.m - count histogram frequencies in two dimensions
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% COPYRIGHT
 
 Copyright (c) 2013, Kendrick Kay
