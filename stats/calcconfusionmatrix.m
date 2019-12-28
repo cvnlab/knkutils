@@ -8,7 +8,7 @@ function f = calcconfusionmatrix(m1,m2,mode,wantnanpp)
 % <mode> (optional) is
 %   0 means use dot
 %   1 means use dot after mean-subtract
-%   2 means use dot after mean-subtract and unit-length-normalize
+%   2 means use dot after mean-subtract and unit-length-normalize (i.e. Pearson's correlation)
 %   3 means use calcmutualinformation.m
 %   4 means Euclidean distance
 %   5 means use dot after unit-length-normalize
