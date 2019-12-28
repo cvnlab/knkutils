@@ -40,7 +40,7 @@ for p=1:length(files)
     figure;
     image(im);
 %    axis image tight;
-    a = imrect; wait(a); pos = getPosition(a);
+    a = imrect; wait(a); pos = getPosition(a);   % can use imrectimagecrop.m !!
     cmin = round(pos(1));
     rmin = round(pos(2));
     cmax = round(pos(1)+pos(3));
