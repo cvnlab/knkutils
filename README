@@ -265,7 +265,6 @@ stats/
   calcoptimalhistbins - calculate the optimum number of bins to use for hist.m
   calcrbflikelihood - calculate likelihood of a set of points given a collection of RBFs
   calcrectlikelihood - calculate likelihood of a set of points given a collection of directions (half-squared responses)
-  calcridgeregressionlambda - determine lambda parameter for ridge regression in a controlled way
   calcrobustsummary - calculate the median and one-half of the central 68% range
   calcsurfaceareanball - calculate surface area of a unit n-ball
   centerofmass - calculate the center-of-mass of a matrix
