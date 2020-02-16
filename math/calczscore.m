@@ -29,6 +29,9 @@ function [f,mn,sd] = calczscore(m,dim,mn,sd,wantcaution)
 % a = [1 2 3];
 % isequal(calczscore(a),[-1 0 1])
 
+% history:
+% - 2020/02/16 - change to avoid bsxfun in order to maximize speed
+
 % inputs
 if ~exist('wantcaution','var') || isempty(wantcaution)
   wantcaution = 1;
@@ -46,5 +49,9 @@ else
     mn = nanmean(m,dim);
     sd = nanstd(m,0,dim);
   end
-  f = bsxfun(@(x,y) zerodiv(x,y,NaN,wantcaution),bsxfun(@minus,m,mn),sd);
+    % this way seemed slow (not multithreaded)
+    %  f = bsxfun(@(x,y) zerodiv(x,y,NaN,wantcaution),bsxfun(@minus,m,mn),sd);
+  dims = ones(1,ndims(m));
+  dims(dim) = size(m,dim);
+  f = zerodiv(m-repmat(mn,dims),repmat(sd,dims),NaN,wantcaution);
 end
