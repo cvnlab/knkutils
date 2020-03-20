@@ -10,6 +10,7 @@ function filenames = figurewrite(prefix,num,mode,outputdir,omitclose)
 % <mode> (optional) is like in printnice.m.  can also be a cell vector,
 %   in which we loop over the elements.  default: [1 72].
 %   special case is -1 which means {0 [1 72]}.
+%   special case is -2 which means {-1 [1 72]}.
 % <outputdir> (optional) is the directory to write to.  default: pwd.
 %   we automatically make the directory if it doesn't exist.
 % <omitclose> (optional) is whether to omit the closing of the figure.  default: 0.
@@ -43,6 +44,9 @@ if ~exist('omitclose','var') || isempty(omitclose)
 end
 if isequal(mode,-1)
   mode = {0 [1 72]};
+end
+if isequal(mode,-2)
+  mode = {-1 [1 72]};
 end
 if ~iscell(mode)
   mode = {mode};
