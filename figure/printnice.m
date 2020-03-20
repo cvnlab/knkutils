@@ -4,6 +4,7 @@ function filenames = printnice(figs,mode,directory,prefix)
 %
 % <figs> (optional) is a vector of figure numbers.  default: [gcf].
 % <mode> (optional) is
+%   -1 means .pdf (using flags "-dpdf -painters -r300").
 %   0 means .eps (using flags "-depsc2 -painters -r300").
 %     [0 1] means also use the flag "-loose".
 %   [1 n] means .png at n pixels per inch (using flags "-dpng -r(n)")
@@ -68,6 +69,9 @@ for p=1:length(figs)
   set(fig,'PaperPositionMode','auto');
 
   switch mode(1)
+  case -1
+    filename = sprintf([prefix '.pdf'],double(fig));  % the double casts fig when it is a class
+    print(fig,'-dpdf','-painters','-r300',filename);
   case 0
     filename = sprintf([prefix '.eps'],double(fig));  % the double casts fig when it is a class
     if length(mode) > 1
