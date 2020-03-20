@@ -1,6 +1,6 @@
-function h = drawtext(res,x,y,font,sz,color,bg,word)
+function h = drawtext(res,x,y,font,sz,color,bg,word,extraopt)
 
-% function h = drawtext(res,x,y,font,sz,color,bg,word)
+% function h = drawtext(res,x,y,font,sz,color,bg,word,extraopt)
 %
 % <res> is
 %   0 means standard figure coordinate frame
@@ -13,6 +13,7 @@ function h = drawtext(res,x,y,font,sz,color,bg,word)
 % <bg> is a 3-element vector with the background color.
 %   [] means do not draw the background.
 % <word> is a string
+% <extraopt> (optional) is a cell vector of extra options for the text object.
 %
 % draw text on the current figure.
 % the field-of-view of <coord> is assumed to be [-.5,.5]
@@ -23,6 +24,11 @@ function h = drawtext(res,x,y,font,sz,color,bg,word)
 %
 % example:
 % figure; drawtext(0,0,0,'Helvetica',.5,[.5 0 0],[1 1 1],'TEST');
+
+% input
+if ~exist('extraopt','var') || isempty(extraopt)
+  extraopt = {};
+end
 
 % prep figure
 hold on;
@@ -36,7 +42,7 @@ end
 % draw text
 h = text(x,y,word);
 set(h,'Color',color,'FontName',font,'FontUnits','normalized', ...
-  'FontSize',sz,'HorizontalAlignment','center');
+  'FontSize',sz,'HorizontalAlignment','center',extraopt{:});
 
 % prep figure
 axis([-.5 .5 -.5 .5]);
