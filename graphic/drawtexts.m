@@ -1,6 +1,6 @@
-function f = drawtexts(res,x,y,font,sz,color,bg,word)
+function f = drawtexts(res,x,y,font,sz,color,bg,word,extraopt)
 
-% function f = drawtexts(res,x,y,font,sz,color,bg,word)
+% function f = drawtexts(res,x,y,font,sz,color,bg,word,extraopt)
 %
 % arguments are the same as to drawtext.m except for:
 %   <res> is the number of pixels along one side
@@ -17,6 +17,9 @@ function f = drawtexts(res,x,y,font,sz,color,bg,word)
 % NOTE: see also drawclosedcontours.m.
 
 % input
+if ~exist('extraopt','var') || isempty(extraopt)
+  extraopt = {};
+end
 if ~iscell(word)
   word = {word};
 end
@@ -26,7 +29,7 @@ numwords = length(word);
 fig = figure;
 f = zeros(res,res,numwords);
 for p=1:numwords
-  clf; drawtext(0,x,y,font,sz,color,bg,word{p});
+  clf; drawtext(0,x,y,font,sz,color,bg,word{p},extraopt);
   f(:,:,p) = renderfigure(res,1);
 end  
 close(fig);
