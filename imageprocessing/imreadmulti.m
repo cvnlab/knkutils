@@ -41,9 +41,12 @@ for p=1:length(files)
   % do it
   if p==1
     dim = ndims(loaded)+1;
-    f = loaded;
+    f = repmat(loaded,[ones(1,dim-1) length(files)]);  % memory allocation
   else
-    f = cat(dim,f,loaded);
+%    f = cat(dim,f,loaded);
+    ix = repmat({':'},[1 dim]);
+    ix{end} = p;
+    f(ix{:}) = loaded;  % do it this way to avoid variable expansion
   end
 
 end
