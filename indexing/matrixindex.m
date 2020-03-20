@@ -12,7 +12,7 @@ function f = matrixindex(m,midx,dim)
 % x = randn(5,6,7);
 % x2 = randn(5,6,7);
 % [mx,ix] = max(x,[],3);
-% matrixindex(x2,ix)
+% matrixindex(x2,ix,3)
 
 % reshape to 2D
 midxsize = size(midx);
