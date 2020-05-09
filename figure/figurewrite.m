@@ -9,8 +9,8 @@ function filenames = figurewrite(prefix,num,mode,outputdir,omitclose)
 % <num> (optional) is a number to use instead of the figure number
 % <mode> (optional) is like in printnice.m.  can also be a cell vector,
 %   in which we loop over the elements.  default: [1 72].
-%   special case is -1 which means {0 [1 72]}.
-%   special case is -2 which means {-1 [1 72]}.
+%   special case is -1 which means {0 [1 72]} (.eps and .png).
+%   special case is -2 which means {-1 [1 72]} (.pdf and .png).
 % <outputdir> (optional) is the directory to write to.  default: pwd.
 %   we automatically make the directory if it doesn't exist.
 % <omitclose> (optional) is whether to omit the closing of the figure.  default: 0.
