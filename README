@@ -513,6 +513,7 @@ mri/
   fstoint - go from FreeSurfer space to our internal space
   getcanonicalhrf - return a canonical HRF (based on empirical data) for arbitrary duration and TR
   getcanonicalhrf2 - return canonical Early and Late HRFs (based on empirical data) for arbitrary duration and TR
+  getcanonicalhrflibrary - return a set of canonical HRFs (based on empirical data) for arbitrary duration and TR
   getsamplehrf - return some sample HRFs estimated from actual fMRI data
   homogenizevolumes - homogenize a set of 3D volumes by dividing by fitted 3D polynomials
   hrfgammadouble.m - evaluate a double-gamma function
