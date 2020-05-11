@@ -19,7 +19,7 @@ function hrf = getcanonicalhrf2(duration,tr)
 %
 % example:
 % hrf = getcanonicalhrf2(4,1);
-% figure; plot(0:length(hrf)-1,hrf,'o-');
+% figure; plot(0:size(hrfs,2)-1,hrf,'o-');
 
 % constants (taken from Kay et al.)
 paramsearly = [7.21 17.6  0.5  4.34 1.82 -3.09   50];
@@ -39,7 +39,7 @@ trold = 0.1;
 hrf = conv2(hrf,ones(1,max(1,round(duration/trold))));
 
 % resample to desired TR
-hrf = interp1((0:length(hrf)-1)*trold,hrf',0:tr:(length(hrf)-1)*trold,'pchip')';
+hrf = interp1((0:size(hrf,2)-1)*trold,hrf',0:tr:(size(hrf,2)-1)*trold,'pchip')';
 
 % make the peak equal to one
 hrf = hrf ./ repmat(max(hrf,[],2),[1 size(hrf,2)]);
