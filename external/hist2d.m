@@ -23,6 +23,9 @@ function [counto,xco,yco] = hist2d(x,y,nx,ny)
 %   xin = randn(1,1000);
 %   [n,x,y] = hist2d(xin,yin,11);
 %   imagesc(x(1,:),y(:,1),n); hold on; plot(xin,yin,'y.'); colorbar
+%
+% Written by David Bean
+% http://www.davidbdean.com/2006/08/17/how-to-plot-a-2d-histogram-using-matlab/
 
 if ~exist('nx')
    nx = 10;
