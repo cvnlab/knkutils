@@ -48,6 +48,12 @@ function f = makeimagestack(m,wantnorm,addborder,csize,bordersize)
 % we plot individual images using imagesc scaled to the range [0,1].
 % we return <f> as [].
 %
+% note that in the X, -1, -2, -3 cases of <wantnorm>, if the determined range has
+% min and max equal to each other, we just give up and return an image that is all zeros.
+%
+% history:
+% - 2020/06/21 - tweak so that no crash occurs when there is no variance for normalization
+%
 % example:
 % a = randn(10,10,12);
 % imagesc(makeimagestack(a,-1));
@@ -83,30 +89,32 @@ if length(wantnorm)==2
   m = normalizerange(m,0,1,wantnorm(1),wantnorm(2));
   mn = 0;
   mx = 1;
-elseif wantnorm==0
-  mn = nanmin(m(:));
-  mx = nanmax(m(:));
-elseif wantnorm==-1
-  m = normalizerange(m,0,1,-max(abs(m(:))),max(abs(m(:))));
-  mn = 0;
-  mx = 1;
-elseif wantnorm==-2
-  m = normalizerange(m,0,1,0,max(m(:)));
-  mn = 0;
-  mx = 1;
-elseif wantnorm==-3
-  m = normalizerange(m,0,1,min(m(:)),max(m(:)));
-  mn = 0;
-  mx = 1;
 else
-  rng = prctile(m(:),[wantnorm 100-wantnorm]);
-  if rng(2)==rng(1)
-    m = zeros(size(m));  % avoid error from normalizerange.m
-  else
-    m = normalizerange(m,0,1,rng(1),rng(2));
+
+  switch wantnorm
+  case 0
+    mn = nanmin(m(:));
+    mx = nanmax(m(:));
+  case -1
+    rng = [-max(abs(m(:))) max(abs(m(:)))];
+  case -2
+    rng = [0 max(m(:))];
+  case -3
+    rng = [min(m(:)) max(m(:))];
+  otherwise
+    rng = prctile(m(:),[wantnorm 100-wantnorm]);
   end
-  mn = 0;
-  mx = 1;
+  
+  if wantnorm ~= 0
+    if rng(1) == rng(2)
+      m = zeros(size(m));  % avoid error from normalizerange.m
+    else
+      m = normalizerange(m,0,1,rng(1),rng(2));
+    end
+    mn = 0;
+    mx = 1;
+  end
+
 end
 md = (mn+mx)/2;
 
