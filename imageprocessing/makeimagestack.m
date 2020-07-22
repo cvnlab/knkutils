@@ -48,10 +48,11 @@ function f = makeimagestack(m,wantnorm,addborder,csize,bordersize)
 % we plot individual images using imagesc scaled to the range [0,1].
 % we return <f> as [].
 %
-% note that in the X, -1, -2, -3 cases of <wantnorm>, if the determined range has
-% min and max equal to each other, we just give up and return an image that is all zeros.
+% note that in the case of <wantnorm>, if the determined range has min and max equal 
+% to each other, we just give up and return an image that is all zeros.
 %
 % history:
+% - 2020/07/22 - further fix based on previous tweak (no variance for normalization)
 % - 2020/06/21 - tweak so that no crash occurs when there is no variance for normalization
 %
 % example:
@@ -86,7 +87,11 @@ m = reshape(m,size(m,1),size(m,2),[]);
 
 % find range, normalize
 if length(wantnorm)==2
-  m = normalizerange(m,0,1,wantnorm(1),wantnorm(2));
+  if wantnorm(1) == wantnorm(2)
+    m = zeros(size(m));  % avoid error from normalizerange.m
+  else
+    m = normalizerange(m,0,1,wantnorm(1),wantnorm(2));
+  end
   mn = 0;
   mx = 1;
 else
