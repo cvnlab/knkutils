@@ -77,7 +77,7 @@ for p=1:length(edges)-1
   md = [md ppp(2)];
   p25 = [p25 ppp(1)];
   p75 = [p75 ppp(3)];
-  if ~isnan(bootsz)
+  if ~isequalwithequalnans(bootsz,NaN)
     temp = bootstrap(y(ok),@nanmedian,[],bootsz);
     if mode==0
       se = [se nanstd(temp)];
@@ -92,11 +92,11 @@ end
 hold on;
 h1 = plot(loc,md,estring);
 if mode==0
-  if ~isnan(bootsz)
+  if ~isequalwithequalnans(bootsz,NaN)
     h1 = [h1 errorbar2(loc,md,se,'v',estring)];
   end
 else
-  if ~isnan(bootsz)
+  if ~isequalwithequalnans(bootsz,NaN)
     h1 = [h1 errorbar2(loc,(real(se)+imag(se))/2,range([real(se); imag(se)],1)/2,'v',estring)];
   end
 end
