@@ -11,9 +11,11 @@ function [vols,flt] = smoothvolumes(vols,volsize,fwhm,mode)
 %   1 means interpret <fwhm> as actually the desired voxel size and use
 %     an ideal Fourier filter (constructbutterfilter3D.m with 10th order)
 %     to achieve that result.
+%   [1 N] means like <mode>==1 except use padarray and 'replicate' with 
+%     N voxels on all sides of the volume, and then crop the result appropriately.
 %   Default: 0.
 %
-% There are two modes.
+% There are two general modes.
 %
 % <mode>==0:
 % smooth <vols> using a Gaussian filter (values below 0.01 are zeroed out).
@@ -26,10 +28,11 @@ function [vols,flt] = smoothvolumes(vols,volsize,fwhm,mode)
 %
 % <mode>==1:
 % smooth <vols> using an ideal Fourier filter. <flt> is returned as [].
-% beware of wraparound issues; you may want to use padarray before 
-% calling this function!!
+% beware of wraparound issues! to handle those issues, consider using
+% <mode> set to [1 N].
 %
 % history:
+% 2020/08/07 - implement <mode>==[1 N]
 % 2016/12/27 - implement <mode>==1 (ideal Fourier filtering to achieve a desired voxel size)
 % 2011/08/23 - now return <flt>
 % 2011/03/08 - handle NaNs intelligently now. this changes old behavior.
@@ -75,14 +78,23 @@ if isequal(mode,0)
 
 % case 2
 else
+
+  if length(mode)==1
+    mode = [mode 0];
+  end
+
   if iscell(vols)
     for zz=1:length(vols)
-      flt = constructbutterfilter3D(sizefull(vols{zz},3),{volsize fwhm},order);
-      vols{zz} = imagefilter3D(vols{zz},flt);
+      temp = padarray(vols{zz},repmat(mode(2),[1 3]),'replicate','both');
+      flt = constructbutterfilter3D(sizefull(temp,3),{volsize fwhm},order);
+      temp = imagefilter3D(temp,flt);
+      vols{zz} = temp(mode(2)+1:end-mode(2),mode(2)+1:end-mode(2),mode(2)+1:end-mode(2),:);
     end
   else
-    flt = constructbutterfilter3D(sizefull(vols,3),{volsize fwhm},order);
-    vols = imagefilter3D(vols,flt);
+    temp = padarray(vols,repmat(mode(2),[1 3]),'replicate','both');
+    flt = constructbutterfilter3D(sizefull(temp,3),{volsize fwhm},order);
+    temp = imagefilter3D(temp,flt);
+    vols = temp(mode(2)+1:end-mode(2),mode(2)+1:end-mode(2),mode(2)+1:end-mode(2),:);
   end
   flt = [];
 end
