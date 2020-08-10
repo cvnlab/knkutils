@@ -459,6 +459,7 @@ colormap/
   cmapsign2 - blue-white-red colormap suitable for ranges like [-X X]
   cmapsign3 - blue-lightgray-red colormap suitable for ranges like [-X X]
   cmapsign4 - cyan-blue-black-red-yellow colormap suitable for ranges like [-X X]
+  cmapturbo - jet-like colormap
   colorinterpolate - make a colormap by interpolating between key colors
   drawcolorbar - draw a colorbar on the current figure
   drawcolorbarcircular - draw a circular colorbar on the current figure
