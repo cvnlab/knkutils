@@ -74,7 +74,8 @@ else
   if isempty(images)
     sz = [];
   else
-    sz = sizefull(images,4);  % fully qualified up to 4 for safety
+    sz = sizefull(images,dim);
+    assert(numel(images)==prod(sz));
   end
   
   % finish up
