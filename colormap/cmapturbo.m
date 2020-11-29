@@ -2,9 +2,10 @@ function f = cmapturbo(n)
 
 % function f = cmapturbo(n)
 %
-% <n> (optional) is the desired number of entries. Default: 256.
+% <n> (optional) is the desired number of entries (no more than 256).
+%   Default: 256.
 %
-% Return a jet-like colormap.
+% Return a jet-like colormap that is more perceptually uniform.
 %
 % example:
 % figure; imagesc(rand(100,100)); axis equal tight; colormap(cmapturbo); colorbar;
