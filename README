@@ -455,10 +455,12 @@ colormap/
   cmapdistinct - hue-based colormap for cases where you want maximally distinct colors
   cmaplookup - take values and get colors from colormap
   cmaphue - hue-based colormap suitable for circular ranges
+  cmapsinglecolor - generate colormap that mixes from one color to a second color
   cmapsign - blue-black-red colormap suitable for ranges like [-X X]
   cmapsign2 - blue-white-red colormap suitable for ranges like [-X X]
   cmapsign3 - blue-lightgray-red colormap suitable for ranges like [-X X]
   cmapsign4 - cyan-blue-black-red-yellow colormap suitable for ranges like [-X X]
+  cmaptab10 - a set of 10 discrete colors
   cmapturbo - jet-like colormap
   colorinterpolate - make a colormap by interpolating between key colors
   drawcolorbar - draw a colorbar on the current figure
