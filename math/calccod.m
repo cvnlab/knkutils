@@ -1,6 +1,6 @@
-function f = calccod(x,y,dim,wantgain,wantmeansub)
+function f = calccod(x,y,dim,wantgain,wantmeansub,wantsafe)
 
-% function f = calccod(x,y,dim,wantgain,wantmeansub)
+% function f = calccod(x,y,dim,wantgain,wantmeansub,wantsafe)
 %
 % <x>,<y> are matrices with the same dimensions
 % <dim> (optional) is the dimension of interest.
@@ -24,6 +24,7 @@ function f = calccod(x,y,dim,wantgain,wantmeansub)
 %     is relative to the mean of each case of <y>.
 %     note that <wantgain> occurs before <wantmeansub>.
 %   default: 1.
+% <wantsafe> (optional) is whether to protect against NaNs. Default: 1.
 %
 % calculate the coefficient of determination (R^2) indicating
 % the percent variance in <y> that is explained by <x>.  this is achieved
@@ -37,7 +38,9 @@ function f = calccod(x,y,dim,wantgain,wantmeansub)
 % it is therefore fundamentally different than Pearson's correlation 
 % coefficient (see calccorrelation.m).
 %
-% NaNs are handled gracefully (a NaN causes that data point to be ignored).
+% if <wantsafe> is true, NaNs are handled gracefully (a NaN causes 
+% that data point to be ignored). if you are sure there are no NaNs,
+% you can turn off <wantsafe> to increase execution speed.
 %
 % if there are no valid data points (i.e. all data points are
 % ignored because of NaNs), we return NaN for that case.
@@ -69,6 +72,9 @@ end
 if ~exist('wantmeansub','var') || isempty(wantmeansub)
   wantmeansub = 1;
 end
+if ~exist('wantsafe','var') || isempty(wantsafe)
+  wantsafe = 1;
+end
 
 % handle weird case up front
 if isempty(x)
@@ -94,8 +100,10 @@ if wantgain
 end
 
 % propagate NaNs (i.e. ignore invalid data points)
-x(isnan(y)) = NaN;
-y(isnan(x)) = NaN;
+if wantsafe
+  x(isnan(y)) = NaN;
+  y(isnan(x)) = NaN;
+end
 
 % handle mean subtraction
 if wantmeansub
