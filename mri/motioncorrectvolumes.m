@@ -192,7 +192,7 @@ parfor p=1:numvols
     else
       data(q) = spm_vol(sprintf([dir0 'image%06d.img'],q));
     end
-    params(q,:) = spm_imatrix(data(q).mat);
+    params(q,:) = spm_imatrix(data(q).mat);   % IMPORTANT NOTE: SPM USUALLY DIVIDES by data(1).mat (meaning is different)
   end
   
   % deal with epiignoremcvol
@@ -207,7 +207,7 @@ parfor p=1:numvols
   paramsB{p} = params;
   paramsB{p}(2:nt+1,1:6) = tsfilter(params(2:nt+1,1:6)',constructbutterfilter1D(nt,cutoff * (nt*volsize{p}(4))),[1 0])';
 
-  % display stuff
+  % display stuff (THESE PLOTS ARE NOT QUITE SPM, GIVEN THE OMISSION OF DIVISION by data(1).mat)
   if ~isempty(figuredir)
     figureprep([100 100 800 400]);
     
