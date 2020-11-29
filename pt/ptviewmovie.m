@@ -346,9 +346,17 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 % 2011/04/22 - fix <framefiles> bug by making sure the images are written out AFTER the flip.
 %              (it previously was not writing out the last frame.)
 % 
-% example:
-% pton;
+% example 1 (white noise):
+% pton;   % or pton([],[],[],1)
 % [timeframes,timekeys,digitrecord,trialoffsets] = ptviewmovie(uint8(255*rand(100,100,3,100)),[],[],2);
+% ptoff;
+%
+% example 2 (rapid flicker):
+% im = upsamplematrix(rand(100,100)>.5,[10 10],[],[],'nearest');
+% images = uint8(cat(4,255*im,255*(~im))); 
+% pton([],[],[],1);
+% [timeframes,timekeys,digitrecord,trialoffsets] = ...
+%   ptviewmovie(images,repmat([1 2],[1 500]),[],1);
 % ptoff;
 
 % to do:
