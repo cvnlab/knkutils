@@ -524,6 +524,7 @@ mri/
   motioncorrectvolumes - perform motion correction for some volumes
   preconditionvolume - precondition a 3D volume by clipping outliers and removing low-frequency signal variations
   quantifymotionparameters - compute an intuitive summary metric of rigid-body motion during a run
+  resliceniftitomatch - use NIFTI header information to match one volume to another
   settr_nii - set the TR in the header information of an NII structure
   surfaceslice2 - figure out information relating voxels to vertices
   undistortvolumes - resample volumes in order to correct for motion and distortion
