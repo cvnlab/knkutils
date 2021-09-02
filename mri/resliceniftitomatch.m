@@ -3,7 +3,8 @@ function f = resliceniftitomatch(refvol,vol,newvol,interptype)
 % function f = resliceniftitomatch(refvol,vol,newvol,interptype)
 %
 % <refvol> is the reference NIFTI volume file
-% <vol> is the NIFTI that you want to reslice to match <refvol>
+% <vol> is the NIFTI that you want to reslice to match <refvol>.
+%   this NIFTI can have one or more volumes in the fourth dimension.
 % <newvol> (optional) is the output NIFTI file to save.
 %   If not supplied, we do not write an output NIFTI file.
 % <interptype> (optional) is 'nearest' | 'linear' | 'cubic' | 'wta'.
@@ -17,8 +18,11 @@ function f = resliceniftitomatch(refvol,vol,newvol,interptype)
 % information of <refvol>, with the exception that it inherits
 % inherits the 'bitpix' and 'datatype' of <vol>.
 %
-% We return the new interpolated volume in <f> (this is the same
+% We return the new interpolated volume(s) in <f> (this is the same
 % as what is saved into <newvol>.
+
+% history:
+% - 2021/09/02 - add support for more than one volume
 
 % inputs
 if ~exist('interptype','var') || isempty(interptype)
@@ -42,11 +46,20 @@ coord1(:,4) = 1;
 coord1 = M1*coord1';       % convert 0-based image coordinates (of refvol) to world
 coord1 = inv(M2)*coord1;   % convert from world to 0-based image coordinates (of vol)
 
-% take vol's data and interpolate through it to match refvol
-f = ba_interp3_wrapper(double(a2.img),coord1(1:3,:)+1,interptype);
+% process each volume (in reverse to ensure memory allocation)
+a1sz = sizefull(a1.img,3);
+a1 = rmfield(a1,'img');
+for xx=size(a2.img,4):-1:1
 
-% mangle a1 and save
-a1.img = cast(reshape(f,size(a1.img)),class(a2.img));
+  % take vol's data and interpolate through it to match refvol
+  f = ba_interp3_wrapper(double(a2.img(:,:,:,xx)),coord1(1:3,:)+1,interptype);
+
+  % mangle a1
+  a1.img(:,:,:,xx) = cast(reshape(f,a1sz),class(a2.img));
+
+end
+
+% save
 a1.hdr.dime.bitpix   = a2.hdr.dime.bitpix;
 a1.hdr.dime.datatype = a2.hdr.dime.datatype;
 save_untouch_nii(a1,newvol);
