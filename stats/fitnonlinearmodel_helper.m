@@ -5,6 +5,9 @@ function results = fitnonlinearmodel_helper(opt,stimulus,tmatrix,smatrix,trainfu
 % Notes:
 % - opt.data is always a cell vector and contains only one voxel
 % - in the nonlinear case, the seed to use has been hacked into model{1}{1} and may have multiple rows
+%
+% history:
+% - 2021/11/11 - implement a speed-up (phelperfun)
 
 % calc
 islinear = isa(opt.model,'function_handle');
@@ -45,18 +48,18 @@ for rr=1:length(trainfun)
   % deal with resampling
   trainstim = feval(trainfun{rr},stimulus);
   traindata = feval(trainfun{rr},opt.data);  % result is a column vector
-  trainT =    projectionmatrix(feval(trainfun{rr},tmatrix));   % NOTE: potentially slow step. make sparse? [or CACHE]
-  trainS =    projectionmatrix(feval(trainfun{rr},smatrix));   % NOTE: potentially slow step. make sparse? [or CACHE]
+  trainT = phelperfun(feval(trainfun{rr},tmatrix));
+  trainS = phelperfun(feval(trainfun{rr},smatrix));
   teststim =  feval(testfun{rr},stimulus);
   testdata =  feval(testfun{rr},opt.data);   % result is a column vector
-  testT =     projectionmatrix(feval(testfun{rr},tmatrix));    % NOTE: potentially slow step. make sparse? [or CACHE]
-  testS =     projectionmatrix(feval(testfun{rr},smatrix));    % NOTE: potentially slow step. make sparse? [or CACHE]
+  testT = phelperfun(feval(testfun{rr},tmatrix));
+  testS = phelperfun(feval(testfun{rr},smatrix));
   if wantmodelfit  % save on memory if user doesn't even want 'modelfit'
     allstim = catcell(1,stimulus);
   end
 
   % precompute
-  traindataT = trainT*traindata;  % remove regressors from data (fitting)
+  traindataT = trainT(traindata);  % remove regressors from data (fitting)
   
   % deal with last-minute data division
   if ~islinear
@@ -84,7 +87,7 @@ for rr=1:length(trainfun)
 
     % do the fitting.  note that we take the mean across the third dimension 
     % to deal with the case where the stimulus consists of multiple frames.
-    finalparams = feval(opt.model,trainT*mean(trainstim,3),traindataT);
+    finalparams = feval(opt.model,trainT(mean(trainstim,3)),traindataT);
 
     % report
     fprintf('      the estimated parameters are ['); ...
@@ -139,7 +142,7 @@ for rr=1:length(trainfun)
         trainstimTRANSFORM = feval(transform,trainstim);
 
         % define the final model function
-        fun = @(pp) trainT*feval(model,copymatrix(seed,ix,pp),trainstimTRANSFORM);
+        fun = @(pp) trainT(feval(model,copymatrix(seed,ix,pp),trainstimTRANSFORM));
 
         % report
         if ismultiplemodels
@@ -196,21 +199,21 @@ for rr=1:length(trainfun)
 
   % prepare data and model fits
   % [NOTE: in the nonlinear case, this inherits model, transform, and trainstimTRANSFORM from above!!]
-  traindatatemp = trainS*traindata;
+  traindatatemp = trainS(traindata);
   if islinear
-    modelfittemp = trainS*(trainstim*finalparams');
+    modelfittemp = trainS(trainstim*finalparams');
   else
-    modelfittemp = nanreplace(trainS*feval(model,finalparams,trainstimTRANSFORM),0,2);
+    modelfittemp = nanreplace(trainS(feval(model,finalparams,trainstimTRANSFORM)),0,2);
   end
   if isempty(testdata)  % handle this case explicitly, just to avoid problems
     results.testdata{rr} = [];
     results.modelpred{rr} = [];
   else
-    results.testdata{rr} = testS*testdata;
+    results.testdata{rr} = testS(testdata);
     if islinear
-      results.modelpred{rr} = testS*(teststim*finalparams');
+      results.modelpred{rr} = testS(teststim*finalparams');
     else
-      results.modelpred{rr} = nanreplace(testS*feval(model,finalparams,feval(transform,teststim)),0,2);
+      results.modelpred{rr} = nanreplace(testS(feval(model,finalparams,feval(transform,teststim))),0,2);
     end
   end
   
@@ -251,3 +254,22 @@ end
 
 % report
 fprintf('  aggregatedtestperformance is %.2f.\n',results.aggregatedtestperformance);
+
+%%%%%%
+
+function fun = phelperfun(v)
+
+% function fun = phelperfun(v)
+% 
+% <v> is a matrix with predictors in the columns
+%
+% return a function that projects out these predictors from a given column vector
+
+if isempty(v)
+  fun = @(x) x;
+elseif all(v(:)==v(1)) && v(1)~=0
+  fun = @(x) x-mean(x);  % in this case, we can avoid slowness by just doing it directly!
+else
+  temp = projectionmatrix(v);
+  fun = @(x) temp*x;
+end
