@@ -162,6 +162,7 @@ programming/
   rmdirquiet - remove a file or directory, suppressing warnings
   rowfun - apply a function to each row of a 2D matrix
   runmatlabinbg.pl - run MATLAB in the background for a single function/script call
+  sanitycheck - print out some fprintf statements about values in a matrix
   saveemptymat - save an empty .mat file
   setrandstate - induce randomness by (randomly) setting the seed of rand and randn
   sgerun2 - run MATLAB code using the Sun Grid Engine (SGE)
