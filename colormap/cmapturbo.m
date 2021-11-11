@@ -17,6 +17,8 @@ end
 
 %%%%%%%%%%%
 
+% See also https://ai.googleblog.com/2019/08/turbo-improved-rainbow-colormap-for.html
+
 % Look-up table for Turbo colormap.
 % Includes example usage and comparison with other colormaps.
 % Adapted for Matlab from https://gist.github.com/mikhailov-work/ee72ba4191942acecc03fe6da94fc73f
