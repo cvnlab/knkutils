@@ -1,6 +1,6 @@
-function drawbar(res,x,y,ang,width,length,color,bg)
+function h = drawbar(res,x,y,ang,width,length,color,bg)
 
-% function drawbar(res,x,y,ang,width,length,color,bg)
+% function h = drawbar(res,x,y,ang,width,length,color,bg)
 %
 % <res> is
 %   0 means standard figure coordinate frame
@@ -17,6 +17,7 @@ function drawbar(res,x,y,ang,width,length,color,bg)
 % <x>,<y>,<width>,<length> are interpreted with respect to the x-
 % and y-axes being bounded by [-.5,.5].  we automatically set the
 % axis bounds and also reverse the y-axis if necessary.
+% return handle to the patch object.
 %
 % example:
 % figure; makebar(0,.2,.1,pi/6,.1,.4,[.5 .1 .3],[1 1 1]);
@@ -35,8 +36,8 @@ xx = [-length/2 -length/2 length/2 length/2 -length/2];
 yy = [-width/2 width/2 width/2 -width/2 -width/2];
 ang0 = choose(res==0,-ang,ang);
 newcoord = [cos(ang0) sin(ang0); -sin(ang0) cos(ang0)] * [xx; yy];  % want to rotate CCW (see makegrating.m)
-hbar = patch(newcoord(1,:) + x,newcoord(2,:) + y,color);
-set(hbar,'EdgeColor','none');
+h = patch(newcoord(1,:) + x,newcoord(2,:) + y,color);
+set(h,'EdgeColor','none');
 
 % prep figure
 axis([-.5 .5 -.5 .5]);
