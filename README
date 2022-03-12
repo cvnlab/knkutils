@@ -262,20 +262,24 @@ stats/
   calcintrinsicdim - calculate number of eigenvectors needed to achieve a certain amount of the variance in a matrix
   calcmutualinformation - calculate mutual information between two matrices
   calcmutualinformationcontinuous - calculate mutual information between two matrices in a continuous way
+  calcmvgaussianpdf - calculate multivarate Gaussian probability density function
   calcnoiseceiling - calculate how well a set of data can be predicted, taking into account the intrinsic noisiness of the data
   calcoptimalhistbins - calculate the optimum number of bins to use for hist.m
   calcrbflikelihood - calculate likelihood of a set of points given a collection of RBFs
   calcrectlikelihood - calculate likelihood of a set of points given a collection of directions (half-squared responses)
   calcrobustsummary - calculate the median and one-half of the central 68% range
+  calcshrunkencovariance - use shrinkage and cross-validation to obtain more robust estimates of covariance
   calcsurfaceareanball - calculate surface area of a unit n-ball
   centerofmass - calculate the center-of-mass of a matrix
   constructdctmatrix - construct a matrix with DCT-II basis functions in the columns
   constructdftmatrix - construct a matrix with DFT basis functions in the columns
   constructfiltersubsample - construct 2D filters according to a subsampling scheme
   constructfiltertiling - construct filters by tiling a single 2D filter
+  constructnearestpsdcovariance - find the nearest positive semidefinite matrix
   constructpolynomialmatrix - construct a matrix with polynomials in the columns
   constructpolynomialmatrix2d - evaluate polynomial basis functions defined in 2D at some locations
   constructpolynomialmatrix3d - evaluate polynomial basis functions defined in 3D at some locations
+  convertcovariancetocorrelation - convert a covariance matrix to a correlation matrix
   evaldivnorm - evaluate divisive-normalization function at some values
   evalgaussian1d - evaluate 1D Gaussian function at some coordinates
   evalgaussian2d - evaluate 2D Gaussian function at some coordinates
