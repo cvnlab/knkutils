@@ -198,6 +198,7 @@ function results = fitnonlinearmodel(opt,chunksize,chunknum)
 %   residuals.  This last-minute scaling should have no effect on the final parameter estimates.
 %
 % History:
+% - 2022/03/26 - remove the enforcement of full.
 % - 2014/05/01 - change the main loop to parfor; some cosmetic tweaks;
 %                now, if no parameters are to be optimized, just return the initial seed
 % - 2013/10/02 - implement the linear-model case
@@ -512,7 +513,7 @@ end
 if ~iscell(stimulus)
   stimulus = {stimulus};
 end
-stimulus = cellfun(@full,stimulus,'UniformOutput',0);
+%REMOVED: stimulus = cellfun(@full,stimulus,'UniformOutput',0);
 
 % deal with extraregressors
 if isa(opt.extraregressors,'function_handle')
@@ -624,7 +625,7 @@ clear results0;
 parfor p=1:vnum
 
   % report
-  fprintf('*** fitnonlinearmodel: processing voxel %d (%d of %d). ***\n',vxs(p),p,vnum);
+  %%fprintf('*** fitnonlinearmodel: processing voxel %d (%d of %d). ***\n',vxs(p),p,vnum);
   vtime = clock;  % start time for current voxel
 
   % get data and hack it in
@@ -646,8 +647,8 @@ parfor p=1:vnum
   results0(p) = fitnonlinearmodel_helper(opt2,stimulus,tmatrix,smatrix,trainfun,testfun);
 
   % report
-  fprintf('*** fitnonlinearmodel: voxel %d (%d of %d) took %.1f seconds. ***\n', ...
-          vxs(p),p,vnum,etime(clock,vtime));
+  %%fprintf('*** fitnonlinearmodel: voxel %d (%d of %d) took %.1f seconds. ***\n', ...
+  %%        vxs(p),p,vnum,etime(clock,vtime));
 
 end
 
