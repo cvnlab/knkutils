@@ -68,6 +68,8 @@ for p=1:length(files)
   else
     aaa = load_untouch_nii(files{p},[],[],[],[],[],wh);
   end
+  assert(aaa.hdr.dime.scl_slope==1);
+  assert(aaa.hdr.dime.scl_inter==0);
   
   % figure out which voxels we need relative to what we loaded
   iii = flatten(bsxfun(@plus,(1:prod(xyzsize(1:2)))',(wh-1)*prod(xyzsize(1:2))));

@@ -21,7 +21,7 @@ function copyxform_nii(source,dest,rot,flipfirst,flipsecond,flipthird)
 [h,filetype,fileprefix,machine] = load_nii_hdr(source);
 dest = matchfiles(dest);
 for p=1:length(dest)
-  h2 = load_untouch_nii(dest{p});
+  h2 = load_untouch_nii(dest{p});  % note: we just inherit the slope and intercept
   h2.hdr.hist.qform_code = h.hist.qform_code;
   h2.hdr.hist.sform_code = h.hist.sform_code;
   h2.hdr.hist.quatern_b = h.hist.quatern_b;
