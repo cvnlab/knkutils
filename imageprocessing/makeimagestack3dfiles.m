@@ -56,7 +56,10 @@ end
 % load data
 if ischar(m)
   m = load_untouch_nii(m);
-  m = double(m.img) * m.hdr.dime.scl_slope + m.hdr.dime.scl_inter;
+  m = double(m.img);
+  if m.hdr.dime.scl_slope ~= 0
+    m = m * m.hdr.dime.scl_slope + m.hdr.dime.scl_inter;
+  end
 end
 
 % make directory

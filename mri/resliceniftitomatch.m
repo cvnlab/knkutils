@@ -52,7 +52,11 @@ a1 = rmfield(a1,'img');
 for xx=size(a2.img,4):-1:1
 
   % take vol's data and interpolate through it to match refvol
-  f = ba_interp3_wrapper(double(a2.img(:,:,:,xx)) * a2.hdr.dime.scl_slope + a2.hdr.dime.scl_inter,coord1(1:3,:)+1,interptype);
+  f = double(a2.img(:,:,:,xx));
+  if a2.hdr.dime.scl_slope ~= 0
+    f = f * a2.hdr.dime.scl_slope + a2.hdr.dime.scl_inter;
+  end
+  f = ba_interp3_wrapper(f,coord1(1:3,:)+1,interptype);
 
   % mangle a1
   a1.img(:,:,:,xx) = cast(reshape(f,a1sz),class(a2.img));
