@@ -118,7 +118,7 @@ for p=1:length(files)
   if isempty(filenameformat)
       tempdir = pwd;
       cd(files{p});
-    files0 = matchfiles('*');
+    files0 = matchfiles('*.dcm');
       % ok, collect the numbers
     filenumbers = [];
     for qqq=1:length(files0)
