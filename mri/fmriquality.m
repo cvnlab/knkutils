@@ -109,6 +109,7 @@ brainmask = meanvol >= lowval;            % where are brain voxels?
 stdmx = highval*knobs(3);                 % what is a good upper limit for std?
 todo = picksubset(1:totalnum,numrandom,seed);  % figure out which ones to process
 numtodo = length(todo);                   % total number to process
+coeffmx = 10;                             % max for color range for coefficient of variation
 fprintf('done.\n');
 
 % write out brain mask and other simple things
@@ -121,7 +122,8 @@ if ~isempty(inplaneextra)
     1)),gray(256),sprintf('%s/meanvolMATCH.png',figuredir));
 end
 imwrite(uint8(255*makeimagestack(stdvol,[0 stdmx])),jet(256),sprintf('%s/stdvol.png',figuredir));
-%%imwrite(uint8(255*makeimagestack(20 - (stdvol./meanvol * 100),[0 20])),hot(256),sprintf('%s/stdvolALT.png',figuredir));
+imwrite(uint8(255*makeimagestack(negreplace(zerodiv(stdvol,meanvol,NaN,0) * 100,NaN), ...
+  [0 coeffmx])),hot(256),sprintf('%s/coeffvariation.png',figuredir));
 fprintf('done.\n');
 
 % write out random volumes
@@ -152,6 +154,7 @@ vols = cellfun(@(x) int16(10000 * x),homogenizevolumes(vols,[knobs(1) knobs(2) k
     % this step is a bit weird, since we impose int16 even if vols wasn't int16.  but should be okay.
 fprintf('done.\n');
 
+if 0
 % write out contour figures
   % first do all slices in one figure
 fprintf('writing out contours (all)');
@@ -168,11 +171,8 @@ for sl=1:xyzsize(3)
   fmriquality_helper;
   fprintf('done.\n');
 end
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% JUNK:
-
-% % 2. calculate coefficient of variation.  write volume and a figure window.
-% coeffvariation = negreplace(zerodiv(stdvol,meanvol,NaN,0) * 100,NaN);
-% imwrite(uint8(255*makeimagestack(coeffvariation,[0 5])),jet(256),sprintf('%s/coeffvariation.png',figuredir));
 
 % check = interp1(temp(:,1),1:64,0.5,'linear')
