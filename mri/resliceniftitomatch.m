@@ -1,6 +1,6 @@
-function f = resliceniftitomatch(refvol,vol,newvol,interptype)
+function f = resliceniftitomatch(refvol,vol,newvol,interptype,world2world)
 
-% function f = resliceniftitomatch(refvol,vol,newvol,interptype)
+% function f = resliceniftitomatch(refvol,vol,newvol,interptype,world2world)
 %
 % <refvol> is the reference NIFTI volume file
 % <vol> is the NIFTI that you want to reslice to match <refvol>.
@@ -9,6 +9,12 @@ function f = resliceniftitomatch(refvol,vol,newvol,interptype)
 %   If not supplied, we do not write an output NIFTI file.
 % <interptype> (optional) is 'nearest' | 'linear' | 'cubic' | 'wta'.
 %   Default: 'cubic'. See ba_interp3_wrapper.m for more details.
+% <world2world> (optional) is a 4x4 transformation matrix indicating
+%   how to take <vol>'s world coordinates to match <refvol>'s world
+%   coordinates. In the usual case, <world2world> is unnecessary,
+%   since <vol> is supposed to be already aligned to <refvol>.
+%   However, it is convenient to allow this input option.
+%   Default: eye(4).
 %
 % Based on the NIFTI header information (srow_*), we reslice/interpolate
 % through the data of <vol> to match the voxel sampling locations 
@@ -22,11 +28,15 @@ function f = resliceniftitomatch(refvol,vol,newvol,interptype)
 % as what is saved into <newvol>.
 
 % history:
+% - 2024/04/23 - add <world2world>
 % - 2021/09/02 - add support for more than one volume
 
 % inputs
 if ~exist('interptype','var') || isempty(interptype)
   interptype = 'cubic';
+end
+if ~exist('world2world','var') || isempty(world2world)
+  world2world = eye(4);
 end
 
 % load
@@ -44,6 +54,7 @@ M2(4,:) = [0 0 0 1];
 coord1 = [xx1(:) yy1(:) zz1(:)];
 coord1(:,4) = 1;
 coord1 = M1*coord1';       % convert 0-based image coordinates (of refvol) to world
+coord1 = inv(world2world)*coord1;  % convert world of refvol to world of vol
 coord1 = inv(M2)*coord1;   % convert from world to 0-based image coordinates (of vol)
 
 % process each volume (in reverse to ensure memory allocation)
