@@ -28,6 +28,7 @@ function f = resliceniftitomatch(refvol,vol,newvol,interptype,world2world)
 % as what is saved into <newvol>.
 
 % history:
+% - 2024/04/26 - fix minor bug (ensure number of volumes in NIFTI header of <newvol> is correct)
 % - 2024/04/23 - add <world2world>
 % - 2021/09/02 - add support for more than one volume
 
@@ -79,4 +80,10 @@ a1.hdr.dime.bitpix   = a2.hdr.dime.bitpix;
 a1.hdr.dime.datatype = a2.hdr.dime.datatype;
 a1.hdr.dime.scl_slope = 1;
 a1.hdr.dime.scl_inter = 0;
+a1.hdr.dime.dim(5) = size(a2.img,4);  % number of volumes
+if size(a2.img,4) > 1
+  a1.hdr.dime.dim(1) = 4;
+else
+  a1.hdr.dime.dim(1) = 3;
+end
 save_untouch_nii(a1,newvol);
