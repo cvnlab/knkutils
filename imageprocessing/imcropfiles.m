@@ -35,21 +35,12 @@ for p=1:length(files)
   % load the image
   im = imread(files{p});
 
-  % if the first one, show it and let the user set the axis range
-  if ~(exist('thecrop','var') && ~isempty(thecrop)) && p==1
+  % if we don't know the crop, show the first image and let the user set the crop
+  if ~exist('thecrop','var') || isempty(thecrop)
     figure;
     image(im);
 %    axis image tight;
-    a = imrect; wait(a); pos = getPosition(a);   % can use imrectimagecrop.m !!
-    cmin = round(pos(1));
-    rmin = round(pos(2));
-    cmax = round(pos(1)+pos(3));
-    rmax = round(pos(2)+pos(4));
-    rmin = max(1,rmin);
-    rmax = min(size(im,1),rmax);
-    cmin = max(1,cmin);
-    cmax = min(size(im,2),cmax);
-    thecrop = [rmin rmax cmin cmax];
+    thecrop = imrectimagecrop;
     close;
   end
   
