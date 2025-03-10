@@ -31,6 +31,10 @@ function m = tseriesinterp(m,trorig,trnew,dim,numsamples,fakeout,wantreplicate,i
 % Note that <m> can be complex-valued; the real and imaginary parts
 % are separately analyzed. This inherits from interp1's behavior.
 %
+% history:
+% - 2025/03/10 - fix bug where first run in <m> would propagate its dimensions
+%                to remaining runs.
+%
 % example:
 % x0 = 0:.1:10;
 % y0 = sin(x0);
@@ -85,7 +89,9 @@ for p=1:length(m)
 
   % calc
   if isempty(numsamples)
-    numsamples = ceil((size(m{p},1)*trorig)/trnew);
+    numsamples0 = ceil((size(m{p},1)*trorig)/trnew);
+  else
+    numsamples0 = numsamples;
   end
 
   % do it
@@ -94,7 +100,7 @@ for p=1:length(m)
   else
     timeorig = linspacefixeddiff(0,trorig,size(m{p},1));
   end
-  timenew  = linspacefixeddiff(0,trnew,numsamples) - fakeout;
+  timenew  = linspacefixeddiff(0,trnew,numsamples0) - fakeout;
 
   % do in chunks
   chunks = chunking(1:size(m{p},2),ceil(size(m{p},2)/numchunks));
@@ -115,7 +121,7 @@ for p=1:length(m)
   clear temp mtemp;
 
   % prepare output
-  msize(dim) = numsamples;
+  msize(dim) = numsamples0;
   m{p} = reshape2D_undo(m{p},dim,msize);
 
 end
