@@ -460,6 +460,7 @@ colormap/
   cmapdistinct - hue-based colormap for cases where you want maximally distinct colors
   cmaplookup - take values and get colors from colormap
   cmaphue - hue-based colormap suitable for circular ranges
+  cmapnoahvar - multi-color colormap
   cmapsinglecolor - generate colormap that mixes from one color to a second color
   cmapsign - blue-black-red colormap suitable for ranges like [-X X]
   cmapsign2 - blue-white-red colormap suitable for ranges like [-X X]
