@@ -8,6 +8,8 @@ function [vols,flt] = smoothvolumes(vols,volsize,fwhm,mode)
 % <fwhm> is a 3-element vector with the desired FWHM of a Gaussian filter
 % <mode> (optional) is
 %   0 means default behavior
+%   [0 1] means default behavior but allow voxels that are originally NaN
+%     to become non-NaN in the output
 %   1 means interpret <fwhm> as actually the desired voxel size and use
 %     an ideal Fourier filter (constructbutterfilter3D.m with 10th order)
 %     to achieve that result.
@@ -17,12 +19,13 @@ function [vols,flt] = smoothvolumes(vols,volsize,fwhm,mode)
 %
 % There are two general modes.
 %
-% <mode>==0:
+% <mode>==0 (or <mode> is [0 1]):
 % smooth <vols> using a Gaussian filter (values below 0.01 are zeroed out).
 % we perform the filtering using imfilter and the 'replicate' option.
 % also, we handle NaNs intelligently by not allowing them to enter the 
-% filtering operation.  however, voxels that are originally NaN are forced
-% to be NaN in the output.  we also return the filter in <flt>; the values sum to 1.
+% filtering operation.  if <mode>==0, voxels that are originally NaN are forced
+% to be NaN in the output; if <mode> is [0 1], this is not enforced.
+% we also return the filter in <flt>; the values sum to 1.
 % it appears that this function is compatible with integer data formats
 % as well as complex-valued data.
 %
@@ -32,6 +35,7 @@ function [vols,flt] = smoothvolumes(vols,volsize,fwhm,mode)
 % <mode> set to [1 N].
 %
 % history:
+% 2025/09/26 - implement <mode>==[0 1]
 % 2020/08/07 - implement <mode>==[1 N]
 % 2016/12/27 - implement <mode>==1 (ideal Fourier filtering to achieve a desired voxel size)
 % 2011/08/23 - now return <flt>
@@ -61,18 +65,21 @@ if ~exist('mode','var') || isempty(mode)
 end
 
 % case 1
-if isequal(mode,0)
+if isequal(mode,0) || isequal(mode,[0 1])
+  if length(mode)==1
+    mode = [mode 0];
+  end
   sd = (fwhm ./ volsize)/(2*sqrt(2*log(2)));  % first convert to matrix units, then to standard deviations
   flt = l1unitlength(constructsmoothingfilter(sd,0.01));
   if iscell(vols)
     for zz=1:length(vols)
       for p=1:size(vols{zz},4)
-        vols{zz}(:,:,:,p) = smoothvolumes_helper(vols{zz}(:,:,:,p),flt);
+        vols{zz}(:,:,:,p) = smoothvolumes_helper(vols{zz}(:,:,:,p),flt,~mode(2));
       end
     end
   else
     for p=1:size(vols,4)
-      vols(:,:,:,p) = smoothvolumes_helper(vols(:,:,:,p),flt);
+      vols(:,:,:,p) = smoothvolumes_helper(vols(:,:,:,p),flt,~mode(2));
     end
   end
 
@@ -101,12 +108,13 @@ end
 
 %%%%%
 
-function f = smoothvolumes_helper(vol,flt)
+function f = smoothvolumes_helper(vol,flt,wantnanforce)
 
-% function f = smoothvolumes_helper(vol,flt)
+% function f = smoothvolumes_helper(vol,flt,wantnanforce)
 %
 % <vol> is a 3D volume, potentially with NaNs
 % <flt> is a filter that sums to 1
+% <wantnanforce> is whether to force original NaNs to stay NaN
 %
 % if there are no NaNs, just filter <vol> with <flt> using 'replicate','same','conv'.
 % if there are NaNs, act like they don't exist.  however, make sure NaNs are returned
@@ -130,8 +138,12 @@ else
   % in the normal case, the sum will be 1.  if there are NaNs, the sum will be less than 1.
   volCT = imfilter(double(good),flt,'replicate','same','conv');
   
-  % perform the weighted sum, making sure that NaN is produced when the smoothing filter covers only NaN values,
-  % and making sure that voxels that were bad to start with end up as NaN.
-  f = copymatrix(zerodiv(volSM,volCT,NaN,0),~good,NaN);
+  % perform the weighted sum, making sure that NaN is produced when the smoothing filter covers only NaN values
+  f = zerodiv(volSM,volCT,NaN,0);
+  
+  % if wanted, make sure that voxels that were bad to start with end up as NaN.
+  if wantnanforce
+    f = copymatrix(f,~good,NaN);
+  end
 
 end
