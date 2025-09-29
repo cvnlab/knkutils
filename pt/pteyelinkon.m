@@ -16,6 +16,11 @@ el = EyelinkInitDefaults(win);
 if ~isempty(el.callback)
   PsychEyelinkDispatchCallback(el);
 end
+el.calibrationtargetsize   = 2.0;     % size of calibration target as percentage of screen. 7TAS height is 1080, 2% = 22 pixels. (el default is 2.5).
+el.calibrationtargetwidth  = 0.92;    % width of calibration target's border as percentage of screen. 7TAS height is 1080, 0.92% = 8 pixels. (el default is 1)
+el.repeatFirstPoint        = 1;       % repeat the first point (center fixation).
+el.enableManualValidationPositions  = 1;    % enable manual accept of calibration/validation 
+EyelinkUpdateDefaults(el);
 [wwidth,wheight] = Screen('WindowSize',win);  % returns in pixels
 fprintf('Pixel size of window is width: %d, height: %d.\n',wwidth,wheight);
 xc_off = wwidth/2;
