@@ -26,7 +26,7 @@ fprintf('Pixel size of window is width: %d, height: %d.\n',wwidth,wheight);
 xc_off = wwidth/2;
 yc_off = wheight/2;
 Eyelink('command',sprintf('screen_phys_coords = %3.1f, %3.1f, %3.1f, %3.1f',el_monitor_size));
-Eyelink('command','screen_distance = %ld %ld',el_screen_distance);  % distance in millimeters from eye to top and bottom edge of the monitor
+Eyelink('command',sprintf('screen_distance = %ld %ld',el_screen_distance));  % distance in millimeters from eye to top and bottom edge of the monitor
 Eyelink('command','screen_pixel_coords = %ld %ld %ld %ld',0,0,wwidth-1,wheight-1);
 Eyelink('message','DISPLAY_COORDS %ld %ld %ld %ld',0,0,wwidth-1,wheight-1);
 Eyelink('command','calibration_type = HV5');
