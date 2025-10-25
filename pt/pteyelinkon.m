@@ -16,6 +16,13 @@ el = EyelinkInitDefaults(win);
 if ~isempty(el.callback)
   PsychEyelinkDispatchCallback(el);
 end
+el.cal_target_beep                  = [0 0 0]; % no beep
+el.drift_correction_target_beep     = [0 0 0]; % no beep
+el.targetbeep                       = false; % no beep
+el.calibration_failed_beep          = [0 0 0]; % no beep
+el.calibration_success_beep         = [0 0 0]; % no beep
+el.drift_correction_failed_beep     = [0 0 0]; % no beep
+el.drift_correction_success_beep    = [0 0 0]; % no beep
 el.calibrationtargetsize   = 2.0;     % size of calibration target as percentage of screen. 7TAS height is 1080, 2% = 22 pixels. (el default is 2.5).
 el.calibrationtargetwidth  = 0.92;    % width of calibration target's border as percentage of screen. 7TAS height is 1080, 0.92% = 8 pixels. (el default is 1)
 el.repeatFirstPoint        = 1;       % repeat the first point (center fixation).
