@@ -29,6 +29,10 @@ function results = ptviewmoviecheck2(timeframes,timekeys,triggerkeys,deltatime,w
 %   <userkeys> is a cell vector of possible user keys (buttons)
 %   <userkeycounts> is a vector of number of times that the keys were pressed.
 %
+% Compared to ptviewmoviecheck.m, this function (ptviewmoviecheck2.m) is much
+% more robust and better at corner cases. It is recommended to use this one for
+% mission-critical applications.
+%
 % See code for internal constants.
 %
 % example:
