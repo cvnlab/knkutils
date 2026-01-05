@@ -1570,7 +1570,7 @@ end
 
 % do some checks
 if wantcheck
-  ptviewmoviecheck(timeframes,timekeys,[],'t');
+  ptviewmoviecheck(timeframes,timekeys,[],{'t' '5'});
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
