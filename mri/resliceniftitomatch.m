@@ -2,7 +2,8 @@ function f = resliceniftitomatch(refvol,vol,newvol,interptype,world2world)
 
 % function f = resliceniftitomatch(refvol,vol,newvol,interptype,world2world)
 %
-% <refvol> is the reference NIFTI volume file
+% <refvol> is the reference NIFTI volume file. Can also be the loaded
+%   NIFTI (via load_untouch_nii.m).
 % <vol> is the NIFTI that you want to reslice to match <refvol>.
 %   this NIFTI can have one or more volumes in the fourth dimension.
 % <newvol> (optional) is the output NIFTI file to save.
@@ -25,14 +26,18 @@ function f = resliceniftitomatch(refvol,vol,newvol,interptype,world2world)
 % inherits the 'bitpix' and 'datatype' of <vol>.
 %
 % We return the new interpolated volume(s) in <f> (this is the same
-% as what is saved into <newvol>.
+% as what is saved into <newvol>).
 
 % history:
+% - 2026/01/05 - generalize <refvol> input; fix output <f>
 % - 2024/04/26 - fix minor bug (ensure number of volumes in NIFTI header of <newvol> is correct)
 % - 2024/04/23 - add <world2world>
 % - 2021/09/02 - add support for more than one volume
 
 % inputs
+if ~exist('newvol','var') || isempty(newvol)
+  newvol = [];
+end
 if ~exist('interptype','var') || isempty(interptype)
   interptype = 'cubic';
 end
@@ -41,7 +46,11 @@ if ~exist('world2world','var') || isempty(world2world)
 end
 
 % load
-a1 = load_untouch_nii(refvol);
+if ischar(refvol)
+  a1 = load_untouch_nii(refvol);
+else
+  a1 = refvol;
+end
 a2 = load_untouch_nii(vol);
 
 % construct transformation matrices
@@ -76,14 +85,17 @@ for xx=size(a2.img,4):-1:1
 end
 
 % save
-a1.hdr.dime.bitpix   = a2.hdr.dime.bitpix;
-a1.hdr.dime.datatype = a2.hdr.dime.datatype;
-a1.hdr.dime.scl_slope = 1;
-a1.hdr.dime.scl_inter = 0;
-a1.hdr.dime.dim(5) = size(a2.img,4);  % number of volumes
-if size(a2.img,4) > 1
-  a1.hdr.dime.dim(1) = 4;
-else
-  a1.hdr.dime.dim(1) = 3;
+if ~isempty(newvol)
+  a1.hdr.dime.bitpix   = a2.hdr.dime.bitpix;
+  a1.hdr.dime.datatype = a2.hdr.dime.datatype;
+  a1.hdr.dime.scl_slope = 1;
+  a1.hdr.dime.scl_inter = 0;
+  a1.hdr.dime.dim(5) = size(a2.img,4);  % number of volumes
+  if size(a2.img,4) > 1
+    a1.hdr.dime.dim(1) = 4;
+  else
+    a1.hdr.dime.dim(1) = 3;
+  end
+  save_untouch_nii(a1,newvol);
 end
-save_untouch_nii(a1,newvol);
+f = a1.img;
