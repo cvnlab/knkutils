@@ -534,6 +534,7 @@ mri/
   resliceniftitomatch - use NIFTI header information to match one volume to another
   settr_nii - set the TR in the header information of an NII structure
   surfaceslice2 - figure out information relating voxels to vertices
+  transformniftilocation - mangle NIFTI header to apply some world transformation
   undistortvolumes - resample volumes in order to correct for motion and distortion
   write3dstack - write out extracted slices in three orientations from a 3D matrix
   writespmfiles - write a series of volumes to individual SPM/ANALYZE files
