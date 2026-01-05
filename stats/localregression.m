@@ -95,11 +95,11 @@ parfor pp=1:length(x0)
   % figure out limited support and calculate kernel weights
   temp = abs(x-x0(pp))/h(1);
   good = temp <= 1;
-  k = 0.75*(1-temp(good).^2);
+  k = 0.75*(1-flatten(temp(good)).^2);
   
   % filter out
-  xA = x(good);
-  yA = y(good);
+  xA = flatten(x(good));
+  yA = flatten(y(good));
   n = length(xA);
   
   % form X matrices
