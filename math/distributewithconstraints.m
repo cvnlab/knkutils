@@ -2,7 +2,7 @@ function f = distributewithconstraints(totalamt,validoptions,numbins,mode,numloo
 
 % function f = distributewithconstraints(totalamt,validoptions,numbins,mode,numlookback)
 %
-% <totalamt> is a positive integer with the total amount of stuff to distribute
+% <totalamt> is a positive number with the total amount of stuff to distribute
 % <validoptions> is a vector of unique non-negative integers. It indicates 
 %   the bin sizes that are valid to use.
 % <numbins> is a positive integer with the number of bins
