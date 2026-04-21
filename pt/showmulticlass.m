@@ -1,12 +1,12 @@
 function [images,maskimages] = showmulticlass(outfile,offset,movieflip,frameduration,fixationinfo,fixationsize, ...
   triggerfun,ptonparams,soafun,skiptrials,images,setnum,isseq,grayval,iscolor, ...
   numrep,con,existingfile,dres,triggerkey,framefiles,trialparams,eyelinkfile,maskimages,specialoverlay, ...
-  stimulusdir,frameevents,framefuncs,setupscript,cleanupscript,stereoflip)
+  stimulusdir,frameevents,framefuncs,setupscript,cleanupscript,stereoflip,fliplead,ptime,pteyelinkonparams)
 
 % function [images,maskimages] = showmulticlass(outfile,offset,movieflip,frameduration,fixationinfo,fixationsize, ...
 %   triggerfun,ptonparams,soafun,skiptrials,images,setnum,isseq,grayval,iscolor, ...
 %   numrep,con,existingfile,dres,triggerkey,framefiles,trialparams,eyelinkfile,maskimages,specialoverlay, ...
-%   stimulusdir,frameevents,framefuncs,setupscript,cleanupscript,stereoflip)
+%   stimulusdir,frameevents,framefuncs,setupscript,cleanupscript,stereoflip,fliplead,ptime,pteyelinkonparams)
 %
 % <outfile> is the .mat file to save results to
 % <offset> is horizontal and vertical offset for display purposes (see ptviewmovie.m)
@@ -179,6 +179,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 %   [132 S R] where S is the subject number between 1-8 and
 %     R is the run number between 1-4.
 %   133 is wnC11alt (like wnC11 but shorter in duration)
+%   [134 R] is nslook, where R is the run number between 1-10. 
 %   default: 1.
 % <isseq> (optional) is whether to do the special sequential showing case.  should be either 0 which
 %   means do nothing special, or a positive integer indicating which frame to use.  if a positive
@@ -216,10 +217,14 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 % <setupscript> (optional) is the input to ptviewmovie.m
 % <cleanupscript> (optional) is the input to ptviewmovie.m
 % <stereoflip> (optional) is the input to ptviewmovie.m.  Default: 0.
+% <fliplead> (optional) is the input to ptviewmovie.m.
+% <ptime> (optional) is the input to ptviewmovie.m.
+% <pteyelinkonparams> (optional) is a cell vector of inputs to pteyelinkon.m. Default: {}.
 %
 % show the stimulus and then save workspace (except the variable 'images') to <outfile>.
 %
 % history:
+% 2026/04/20 - add <fliplead>,<ptime>,<pteyelinkonparams> inputs; implement exp 134
 % 2019/10/14 - final tweaks to 132
 % 2019/10/13 - prompt user to decide whether to do an eyetracking calibration
 % 2019/10/07 - implement 132
@@ -310,6 +315,7 @@ infofile_version2 = fullfile(stimulusdir,'multiclassinfo_version2.mat');
 infofile_hrf = fullfile(stimulusdir,'multiclassinfo_hrf.mat');
 infofile_nsd = fullfile(stimulusdir,'nsd_expdesign.mat');
 infofile_nsdsynthetic =   fullfile(stimulusdir,'nsdsynthetic_expdesign.mat');
+infofile_nslook = fullfile(stimulusdir,'nslook_expdesign.mat');
 switch setnum(1)
 case {1 2 3 6 7 8}
   stimfile = fullfile(stimulusdir,'workspace.mat');  % where the 'images' variables can be obtained
@@ -413,6 +419,8 @@ case {131}
 case {132}
   stimfile =  fullfile(stimulusdir,'nsdsynthetic_stimuli.hdf5');
   stimfile2 = fullfile(stimulusdir,sprintf('nsdsynthetic_colorstimuli_subj%02d.hdf5',setnum(2)));
+case {134}
+  stimfile = fullfile(stimulusdir,'workspace_nslook.mat');
 end
 stimfileextra = fullfile(stimulusdir,'workspace_convert10.mat');
 
@@ -474,6 +482,15 @@ if ~exist('cleanupscript','var') || isempty(cleanupscript)
 end
 if ~exist('stereoflip','var') || isempty(stereoflip)
   stereoflip = 0;
+end
+if ~exist('fliplead','var') || isempty(fliplead)
+  fliplead = [];
+end
+if ~exist('ptime','var') || isempty(ptime)
+  ptime = [];
+end
+if ~exist('pteyelinkonparams','var') || isempty(pteyelinkonparams)
+  pteyelinkonparams = {};
 end
 if ~isempty(existingfile)
   efile = load(existingfile,'framedesign','classorder','fixationorder','trialoffsets','digitrecord');
@@ -654,7 +671,34 @@ if ~exist('images','var') || isempty(images)
     
     % clean up
     clear a1;
+
+  % this is a special case. here we do all the dirty work for this experiment,
+  % every time the experiment script is called.
+  case 134
   
+    % sanity check
+    assert(setnum(2)>=1 && setnum(2)<=10);  % run is between 1-10
+    
+    % load the experiment design information
+    a1 = load(infofile_nslook);
+    
+    % construct trialpattern (600 trials x 14 images)
+    trialpattern = a1.trialpattern(:,:,setnum(2));
+    trialpattern = conv2(trialpattern,[1 1]');  % have to sustain it for 2 trials (which are just 0.5-s TRs)
+    trialpattern = trialpattern(1:size(a1.trialpattern,1),:);
+
+    % construct the "on-pattern"
+    onpattern = [ones(1,1)];
+    
+    % load images
+    images = loadmulti(stimfile,'images');
+
+    % hack so that ptviewmovie.m knows this is the color case
+    images{1} = repmat(images{1},[1 1 1 2]);
+
+    % clean up
+    clear a1;
+    
   % this is the default case
   otherwise
 
@@ -1793,6 +1837,18 @@ else
         framedesign{p} = repmat(ones(1,20),[sum(trialpattern(:,p)) 1]);
       end
     end
+  case {134}
+    if isseq
+      framedesign = {};
+      for p=1:14
+        framedesign{p} = isseq;
+      end
+    else
+      framedesign = {};
+      for p=1:14
+        framedesign{p} = repmat(ones(1,1),[sum(trialpattern(:,p)) 1]);
+      end
+    end
   case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119}
     % N/A
   end
@@ -1921,6 +1977,9 @@ if isseq
     onpattern = [1];
   case {131 132}
     trialpattern = eye(length(imagelist));
+    onpattern = [1];
+  case {134}
+    trialpattern = eye(14);
     onpattern = [1];
   case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119}
     % N/A
@@ -2163,7 +2222,7 @@ else
       trialpattern(1+(zzz-1)*3+1,actualtrials(zzz)) = 1;  % 12-s
       trialpattern(1+(zzz-1)*3+2,actualtrials(zzz)) = 1;  % 12-s
     end
-  case {131 132}
+  case {131 132 134}
     % N/A because we calculated this above already
   case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119}
     % N/A
@@ -2401,11 +2460,13 @@ else
     classorder = [1];
   case {131 132}
     classorder = 1:length(imagelist);
+  case {134}
+    classorder = 1:14;
   case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119}
     % N/A but do this just so the below line won't fail
     classorder = [];
   end
-  if ~isseq && ~ismember(setnum(1),[26 109 110 111 131 132])  % 109-111,131,132 is special. we pre-specify, so no randomization etc.
+  if ~isseq && ~ismember(setnum(1),[26 109 110 111 131 132 134])  % 109-111,131,132,134 is special. we pre-specify, so no randomization etc.
     classorder = permutedim(classorder);
     
     % make sure beginning and end are stimulus trials and make sure no two consecutive blank trials
@@ -3150,39 +3211,42 @@ oldclut = pton(ptonparams{:});
 % initialize, setup, calibrate, and start eyelink
 if ~isempty(eyelinkfile)
 
-  assert(EyelinkInit()==1);
-  win = firstel(Screen('Windows'));
-  el = EyelinkInitDefaults(win);
-  [wwidth,wheight] = Screen('WindowSize',win);  % returns in pixels
-  fprintf('Pixel size of window is width: %d, height: %d.\n',wwidth,wheight);
-  Eyelink('command','screen_pixel_coords = %ld %ld %ld %ld',0,0,wwidth-1,wheight-1);
-  Eyelink('message','DISPLAY_COORDS %ld %ld %ld %ld',0,0,wwidth-1,wheight-1);
-  Eyelink('command','calibration_type = HV5');
-  Eyelink('command','active_eye = LEFT');
-  Eyelink('command','automatic_calibration_pacing=1500');
-    % what events (columns) are recorded in EDF:
-  Eyelink('command','file_event_filter = LEFT,RIGHT,FIXATION,SACCADE,BLINK,MESSAGE,BUTTON');
-    % what samples (columns) are recorded in EDF:
-  Eyelink('command','file_sample_data = LEFT,RIGHT,GAZE,HREF,AREA,GAZERES,STATUS,PUPIL');
-    % events available for real time:
-  Eyelink('command','link_event_filter = LEFT,RIGHT,FIXATION,SACCADE,BLINK,MESSAGE,BUTTON');
-    % samples available for real time:
-  Eyelink('command','link_sample_data = LEFT,RIGHT,GAZE,GAZERES,AREA,STATUS');
-  temp = regexp(datestr(now),'.+ (\d+):(\d+):(\d+)','tokens');  % HHMMSS    [or datestr(now,'HHMMSS') !]
-  eyetempfile = sprintf('%s.edf',cat(2,temp{1}{:}));
-  fprintf('Saving eyetracking data to %s.\n',eyetempfile);
-  Eyelink('Openfile',eyetempfile);  % NOTE THIS TEMPORARY FILENAME. REMEMBER THAT EYELINK REQUIRES SHORT FILENAME!
-  checkcalib = input('Do you want to do a calibration (0=no, 1=yes)? ','s');
-  if isequal(checkcalib,'1')
-    fprintf('Please perform calibration. When done, the subject should press a button in order to proceed.\n');
-    EyelinkDoTrackerSetup(el);
-  %  EyelinkDoDriftCorrection(el);
-  end
-  fprintf('Button detected from subject. Starting recording of eyetracking data. Proceeding to stimulus setup.\n');
-  Eyelink('StartRecording');
-  % note that we expect that something should probably issue the command:
-  %   Eyelink('Message','SYNCTIME');
-  % before we close out the eyelink.
+  eyetempfile = pteyelinkon(pteyelinkonparams{:});
+
+      % KK commented out April 20 2026. This is all stale and replaced by the above.
+      %   assert(EyelinkInit()==1);
+      %   win = firstel(Screen('Windows'));
+      %   el = EyelinkInitDefaults(win);
+      %   [wwidth,wheight] = Screen('WindowSize',win);  % returns in pixels
+      %   fprintf('Pixel size of window is width: %d, height: %d.\n',wwidth,wheight);
+      %   Eyelink('command','screen_pixel_coords = %ld %ld %ld %ld',0,0,wwidth-1,wheight-1);
+      %   Eyelink('message','DISPLAY_COORDS %ld %ld %ld %ld',0,0,wwidth-1,wheight-1);
+      %   Eyelink('command','calibration_type = HV5');
+      %   Eyelink('command','active_eye = LEFT');
+      %   Eyelink('command','automatic_calibration_pacing=1500');
+      %     % what events (columns) are recorded in EDF:
+      %   Eyelink('command','file_event_filter = LEFT,RIGHT,FIXATION,SACCADE,BLINK,MESSAGE,BUTTON');
+      %     % what samples (columns) are recorded in EDF:
+      %   Eyelink('command','file_sample_data = LEFT,RIGHT,GAZE,HREF,AREA,GAZERES,STATUS,PUPIL');
+      %     % events available for real time:
+      %   Eyelink('command','link_event_filter = LEFT,RIGHT,FIXATION,SACCADE,BLINK,MESSAGE,BUTTON');
+      %     % samples available for real time:
+      %   Eyelink('command','link_sample_data = LEFT,RIGHT,GAZE,GAZERES,AREA,STATUS');
+      %   temp = regexp(datestr(now),'.+ (\d+):(\d+):(\d+)','tokens');  % HHMMSS    [or datestr(now,'HHMMSS') !]
+      %   eyetempfile = sprintf('%s.edf',cat(2,temp{1}{:}));
+      %   fprintf('Saving eyetracking data to %s.\n',eyetempfile);
+      %   Eyelink('Openfile',eyetempfile);  % NOTE THIS TEMPORARY FILENAME. REMEMBER THAT EYELINK REQUIRES SHORT FILENAME!
+      %   checkcalib = input('Do you want to do a calibration (0=no, 1=yes)? ','s');
+      %   if isequal(checkcalib,'1')
+      %     fprintf('Please perform calibration. When done, the subject should press a button in order to proceed.\n');
+      %     EyelinkDoTrackerSetup(el);
+      %   %  EyelinkDoDriftCorrection(el);
+      %   end
+      %   fprintf('Button detected from subject. Starting recording of eyetracking data. Proceeding to stimulus setup.\n');
+      %   Eyelink('StartRecording');
+      %   % note that we expect that something should probably issue the command:
+      %   %   Eyelink('Message','SYNCTIME');
+      %   % before we close out the eyelink.
 
 end
 
@@ -3194,23 +3258,28 @@ if iscolor
     frameorder,framecolor,frameduration,fixationorder,fixationcolor,fixationsize,grayval,[],[], ...
       offset,choose(con==100,[],1-con/100),movieflip,scfactor,[],triggerfun,framefiles,[], ...
       triggerkey,specialcon,trialtask,maskimages,specialoverlay,frameevents,framefuncs,setupscript, ...
-      cleanupscript,stereocontrol,stereoflip);
+      cleanupscript,stereocontrol,stereoflip,fliplead,ptime);
 else
     % OLD AND WASTEFUL: reshape(cat(3,images{:}),size(images{1},1),size(images{1},2),1,[])
   [timeframes,timekeys,digitrecord,trialoffsets] = ptviewmovie(images, ...
     frameorder,framecolor,frameduration,fixationorder,fixationcolor,fixationsize,grayval,[],[], ...
       offset,choose(con==100,[],1-con/100),movieflip,scfactor,[],triggerfun,framefiles,[], ...
       triggerkey,specialcon,trialtask,maskimages,specialoverlay,frameevents,framefuncs,setupscript, ...
-      cleanupscript,stereocontrol,stereoflip);
+      cleanupscript,stereocontrol,stereoflip,fliplead,ptime);
 end
 
 % close out eyelink
 if ~isempty(eyelinkfile)
-  Eyelink('StopRecording');
-  Eyelink('CloseFile');
-  Eyelink('ReceiveFile');
-  Eyelink('ShutDown');
-  movefile(eyetempfile,eyelinkfile);  % RENAME DOWNLOADED FILE TO THE FINAL FILENAME
+
+  pteyelinkoff(eyetempfile,eyelinkfile);
+
+      % KK commented out April 20 2026. This is all stale and replaced by the above.
+      %   Eyelink('StopRecording');
+      %   Eyelink('CloseFile');
+      %   Eyelink('ReceiveFile');
+      %   Eyelink('ShutDown');
+      %   movefile(eyetempfile,eyelinkfile);  % RENAME DOWNLOADED FILE TO THE FINAL FILENAME
+
 end
 
 %%%%%%%%%%%%% clean up and save
