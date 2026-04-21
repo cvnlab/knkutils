@@ -2,13 +2,41 @@ function eyetempfile = pteyelinkon(el_monitor_size,el_screen_distance,cv_proport
 
 % function eyetempfile = pteyelinkon(el_monitor_size,el_screen_distance,cv_proportion_area,point2point_distance_pix)
 %
-% <el_monitor_size> is 1 x 4 with monitor size in millimeters (center to left, top, right, and bottom)
-% <el_screen_distance> is 1 x 2 with distance in millimeters from eye to top and bottom edge of the monitor
-% <cv_proportion_area> is 1 x 2 proportion of [x,y] screen resolution (in pixels) at which we place calibration targets
-% <point2point_distance_pix> is number of pixels for shift right/left/down/up
+% <el_monitor_size> (optional) is 1 x 4 with monitor size in millimeters (center to left, top, right, and bottom)
+% <el_screen_distance> (optional) is 1 x 2 with distance in millimeters from eye to top and bottom edge of the monitor
+% <cv_proportion_area> (optional) is 1 x 2 proportion of [x,y] screen resolution (in pixels) at which we place calibration targets
+% <point2point_distance_pix> (optional) is number of pixels for shift right/left/down/up
+%
+% Note: if any of the inputs are [], we skip setting any related settings!
 %
 % Perform some typical Psychtoolbox setup for Eyelink usage.
 % Return the filename used to capture .edf data.
+
+% inputs
+if ~exist('el_monitor_size','var') || isempty(el_monitor_size)
+  el_monitor_size = [];
+end
+if ~exist('el_screen_distance','var') || isempty(el_screen_distance)
+  el_screen_distance = [];
+end
+if ~exist('cv_proportion_area','var') || isempty(cv_proportion_area)
+  cv_proportion_area = [];
+end
+if ~exist('point2point_distance_pix','var') || isempty(point2point_distance_pix)
+  point2point_distance_pix = [];
+end
+if isempty(el_monitor_size)
+  warning('pteyelinkon el_monitor_size is NOT SET');
+end
+if isempty(el_screen_distance)
+  warning('pteyelinkon el_screen_distance is NOT SET');
+end
+if isempty(cv_proportion_area)
+  warning('pteyelinkon cv_proportion_area is NOT SET');
+end
+if isempty(point2point_distance_pix)
+  warning('pteyelinkon point2point_distance_pix is NOT SET');
+end
 
 assert(EyelinkInit()==1);
 win = firstel(Screen('Windows'));
@@ -32,30 +60,38 @@ EyelinkUpdateDefaults(el);
 fprintf('Pixel size of window is width: %d, height: %d.\n',wwidth,wheight);
 xc_off = wwidth/2;
 yc_off = wheight/2;
-Eyelink('command',sprintf('screen_phys_coords = %3.1f, %3.1f, %3.1f, %3.1f',el_monitor_size));
-Eyelink('command',sprintf('screen_distance = %ld %ld',el_screen_distance));  % distance in millimeters from eye to top and bottom edge of the monitor
+if ~isempty(el_monitor_size)
+  Eyelink('command',sprintf('screen_phys_coords = %3.1f, %3.1f, %3.1f, %3.1f',el_monitor_size));
+end
+if ~isempty(el_screen_distance)
+  Eyelink('command',sprintf('screen_distance = %ld %ld',el_screen_distance));  % distance in millimeters from eye to top and bottom edge of the monitor
+end
 Eyelink('command','screen_pixel_coords = %ld %ld %ld %ld',0,0,wwidth-1,wheight-1);
 Eyelink('message','DISPLAY_COORDS %ld %ld %ld %ld',0,0,wwidth-1,wheight-1);
 Eyelink('command','calibration_type = HV5');
-Eyelink('command',sprintf('calibration_area_proportion %1.3f, %1.3f',cv_proportion_area));
-Eyelink('command',sprintf('validation_area_proportion %1.3f, %1.3f',cv_proportion_area));
+if ~isempty(cv_proportion_area)
+  Eyelink('command',sprintf('calibration_area_proportion %1.3f, %1.3f',cv_proportion_area));
+  Eyelink('command',sprintf('validation_area_proportion %1.3f, %1.3f',cv_proportion_area));
+end
 Eyelink('command','generate_default_targets = NO');
-Eyelink('command','calibration_samples  = 6');
-Eyelink('command','calibration_sequence = 0,1,2,3,4,5');
-Eyelink('command','calibration_targets  = %d,%d %d,%d %d,%d %d,%d %d,%d',...
-    xc_off,yc_off,  ... center x,y
-    xc_off + point2point_distance_pix, yc_off, ... horz shift right
-    xc_off - point2point_distance_pix, yc_off, ... horz shift left
-    xc_off, yc_off + point2point_distance_pix, ... vert shift down
-    xc_off, yc_off - point2point_distance_pix); %  vert shift up
-Eyelink('command','validation_samples = 6');
-Eyelink('command','validation_sequence = 0,1,2,3,4,5');
-Eyelink('command','validation_targets  = %d,%d %d,%d %d,%d %d,%d %d,%d',...
-    xc_off,yc_off,  ... center x,y
-    xc_off + point2point_distance_pix, yc_off, ... horz shift right
-    xc_off - point2point_distance_pix, yc_off, ... horz shift left
-    xc_off, yc_off + point2point_distance_pix, ... vert shift down
-    xc_off, yc_off - point2point_distance_pix); %  vert shift up
+if ~isempty(point2point_distance_pix)
+  Eyelink('command','calibration_samples  = 6');
+  Eyelink('command','calibration_sequence = 0,1,2,3,4,5');
+  Eyelink('command','calibration_targets  = %d,%d %d,%d %d,%d %d,%d %d,%d',...
+      xc_off,yc_off,  ... center x,y
+      xc_off + point2point_distance_pix, yc_off, ... horz shift right
+      xc_off - point2point_distance_pix, yc_off, ... horz shift left
+      xc_off, yc_off + point2point_distance_pix, ... vert shift down
+      xc_off, yc_off - point2point_distance_pix); %  vert shift up
+  Eyelink('command','validation_samples = 6');
+  Eyelink('command','validation_sequence = 0,1,2,3,4,5');
+  Eyelink('command','validation_targets  = %d,%d %d,%d %d,%d %d,%d %d,%d',...
+      xc_off,yc_off,  ... center x,y
+      xc_off + point2point_distance_pix, yc_off, ... horz shift right
+      xc_off - point2point_distance_pix, yc_off, ... horz shift left
+      xc_off, yc_off + point2point_distance_pix, ... vert shift down
+      xc_off, yc_off - point2point_distance_pix); %  vert shift up
+end
 Eyelink('command','active_eye = LEFT');
 Eyelink('command','binocular_enabled','NO');
 Eyelink('command','enable_automatic_calibration','NO'); % force manual calibration sequencing, if yes, provide Eyelink('command','automatic_calibration_pacing=1500');
