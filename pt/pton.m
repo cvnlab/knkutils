@@ -19,7 +19,11 @@ function oldclut = pton(resolution,winsize,clutfile,skipsync,wantstereo)
 %   (5) [] which means to do nothing (i.e. do not touch the clut)
 %   the clut should be a 256 x 3 matrix with values in [0,1].
 %   default: [].
-% <skipsync> (optional) is whether to skip the sync tests.  default: 0.
+% <skipsync> (optional) is whether to skip the sync tests. If 1, we skip. 
+%   If 0, we don't skip. Special case is to pass <skipsync> as the std dev
+%   in seconds to use for Screen('Preference','SyncTestSettings',...).
+%   In that special case, we don't skip sync tests and use that setting.
+%   Default: 0.
 % <wantstereo> (optional) is whether to use VPIXX stereo mode.  default: 0.
 %
 % initialize the PsychToolbox setup:
@@ -37,6 +41,7 @@ function oldclut = pton(resolution,winsize,clutfile,skipsync,wantstereo)
 %   we don't rely on any java stuff.
 %
 % history:
+% 2026/04/20 - add <skipsync> special case
 % 2018/05/26 - add <wantstereo> input
 % 2011/10/13 - now always generate a CLUT at 8-bit (256 rows).
 %
@@ -94,7 +99,12 @@ if ~isempty(resolution)
 end
 
 % set the sync
-Screen('Preference','SkipSyncTests',skipsync);
+if isequal(skipsync,0) || isequal(skipsync,1)
+  Screen('Preference','SkipSyncTests',skipsync);
+else
+  Screen('Preference','SkipSyncTests',0);
+  Screen('Preference','SyncTestSettings',skipsync);
+end
 
 % open a window and fill with gray
 if isempty(winsize)
@@ -154,7 +164,6 @@ KbName('UnifyKeyNames');
 
 % SCRATCHPAD:
 %
-% Screen('Preference','SkipSyncTests',1);
 % [win,rect] = Screen('OpenWindow',0,127,[]);
 %     %%%oldclut = Screen('ReadNormalizedGammaTable',win);
 % Screen('LoadNormalizedGammaTable',win,repmat(linspace(0,1,256)',[1 3]));
