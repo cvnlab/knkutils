@@ -224,6 +224,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 % show the stimulus and then save workspace (except the variable 'images') to <outfile>.
 %
 % history:
+% 2026/04/20 - major change for eyelink configuration to use pteyelinkon.m !!!!
 % 2026/04/20 - add <fliplead>,<ptime>,<pteyelinkonparams> inputs; implement exp 134
 % 2019/10/14 - final tweaks to 132
 % 2019/10/13 - prompt user to decide whether to do an eyetracking calibration
