@@ -2,13 +2,13 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
   ptviewmovie(images,frameorder,framecolor,frameduration,fixationorder,fixationcolor,fixationsize, ...
               grayval,detectinput,wantcheck,offset,moviemask,movieflip,scfactor,allowforceglitch, ...
               triggerfun,framefiles,frameskip,triggerkey,specialcon,trialtask,maskimages,specialoverlay, ...
-              frameevents,framefuncs,setupscript,cleanupscript,stereocontrol,stereoflip)
+              frameevents,framefuncs,setupscript,cleanupscript,stereocontrol,stereoflip,fliplead,ptime)
 
 % function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   ptviewmovie(images,frameorder,framecolor,frameduration,fixationorder,fixationcolor,fixationsize, ...
 %               grayval,detectinput,wantcheck,offset,moviemask,movieflip,scfactor,allowforceglitch, ...
 %               triggerfun,framefiles,frameskip,triggerkey,specialcon,trialtask,maskimages,specialoverlay, ...
-%               frameevents,framefuncs,setupscript,cleanupscript,stereocontrol,stereoflip)
+%               frameevents,framefuncs,setupscript,cleanupscript,stereocontrol,stereoflip,fliplead,ptime)
 % 
 % <images> is a .mat file with 'images' as a uint8
 %   A x B x 1/3 x N matrix with different images along the fourth dimension.  
@@ -256,8 +256,20 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   both eyes.  Default is [] which is standard "mono" mode.
 % <stereoflip> (optional) is whether to flip the left eye and right eye at the level
 %   of the stereo drawing (so that the subject gets the correct stimulus delivery). Default: 0.
+% <fliplead> (optional) is the minimum amount of time in seconds to allocate
+%   prior to flip. Default: 10/1000.
+% <ptime> (optional) is the time in seconds that we estimate that we need to prepare
+%   for the next frame. if this number is on the large side, this makes us conservative 
+%   and makes us very happy to drop frames in order to have a chance of getting back on track.
+%   if this number is on the small side, this makes us aggressive and makes us 
+%   relatively unwilling to drop frames. This has the risk that we will never
+%   get back on track, and hence the risk that we will accumulate lag.
+%   clearly, ptime should be no more than mfi * frameduration (since if we really
+%   required that much time, the presentation could never adequately keep up).
+%   Default: 10/1000.
 % return <timeframes> as a 1 x size(<frameorder>,2) vector with the time of each frame showing.
-%   (time is relative to the time of the first frame.)
+%   (time is relative to the time of the first frame.) Note that as of April 20, 2026, there
+%   can be NaNs in <timeframes> which indicate dropped frames.
 % return <timekeys> as a record of the input detected.  the format is {(time button;)*}.
 %   where button is a string (single button depressed) or a cell vector of strings (multiple
 %   buttons depressed).  for regular button presses, the recorded time is what KbCheck returns.
@@ -307,6 +319,9 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   So it is important to test your particular setup!
 %
 % history:
+% 2026/04/20 - MAJOR CHANGE TO TIMING HANDLING: (1) we now always read input instantaneously.
+%              (2) we now enable dropping of frames (if necessary). (3) we now have the
+%              <fliplead> and <ptime> inputs.  You SHOULD TEST thoroughly on your setup!
 % 2019/01/05 - change absolutetime0 to be matlab's now function!
 % 2018/10/25 - tweak to glitch-compensation mechanism: use 0 in the Flip command.
 % 2018/10/16 - implement reporttext and the case of dot color changes (fixationorder case 2)
@@ -451,6 +466,12 @@ if ~exist('stereocontrol','var') || isempty(stereocontrol)
 end
 if ~exist('stereoflip','var') || isempty(stereoflip)
   stereoflip = 0;
+end
+if ~exist('fliplead','var') || isempty(fliplead)
+  fliplead = 10/1000;
+end
+if ~exist('ptime','var') || isempty(ptime)
+  ptime = 10/1000;
 end
 if ischar(images)
   images = {images};
@@ -1371,6 +1392,30 @@ for frame=1:frameskip:size(frameorder,2)+1
       end
     end
 
+    % try to read input (instantaneous)
+    if detectinput
+      [keyIsDown,secs,keyCode,deltaSecs] = KbCheck(-3);  % all devices
+      if keyIsDown
+
+        % get the name of the key and record it
+        kn = KbName(keyCode);
+        timekeys = [timekeys; {secs kn}];
+
+        % check if ESCAPE was pressed
+        if isequal(kn,'ESCAPE')
+          fprintf('Escape key detected.  Exiting prematurely.\n');
+          getoutearly = 1;
+          break;
+        end
+
+        % force a glitch?
+        if allowforceglitch(1) && isequal(kn,'p')
+          WaitSecs(allowforceglitch(2));
+        end
+
+      end
+    end
+
     % if we are in the initial case OR if we have hit the when time, then display the frame
     if when == 0 | GetSecs >= when
   
@@ -1417,30 +1462,6 @@ for frame=1:frameskip:size(frameorder,2)+1
       % get out of this loop
       break;
     
-    % otherwise, try to read input
-    else
-      if detectinput
-        [keyIsDown,secs,keyCode,deltaSecs] = KbCheck(-3);  % all devices
-        if keyIsDown
-
-          % get the name of the key and record it
-          kn = KbName(keyCode);
-          timekeys = [timekeys; {secs kn}];
-
-          % check if ESCAPE was pressed
-          if isequal(kn,'ESCAPE')
-            fprintf('Escape key detected.  Exiting prematurely.\n');
-            getoutearly = 1;
-            break;
-          end
-
-          % force a glitch?
-          if allowforceglitch(1) && isequal(kn,'p')
-            WaitSecs(allowforceglitch(2));
-          end
-
-        end
-      end
     end
 
   end
@@ -1454,20 +1475,35 @@ for frame=1:frameskip:size(frameorder,2)+1
     end
   end
 
+  % calc
+  fliplead0 = min(fliplead,(9/10)*mfi);
+
   % update when
   if didglitch
     % if there were glitches, proceed from our earlier when time.
-    % set the when time to 9/10 a frame before the desired frame.
+    % set the when time to a little bit before the desired frame.
     % notice that the accuracy of the mfi is strongly assumed here.
     whendesired = whendesired + mfi * frameduration;
-    when = whendesired - mfi * (9/10);
+    when = whendesired - fliplead0;
+
+    % if the current time is already past whendesired-ptime, we declare
+    % that we are doomed, and so we drop a frame. we do it repeatedly until
+    % we are in the clear. this gives us at least a chance of getting
+    % back on track, but it is NOT guaranteed. ultimately, the user needs
+    % do some checking of NaNs in timeframes to check for dropped frames.
+    while GetSecs >= whendesired - ptime
+      framecnt = framecnt + 1;
+      whendesired = whendesired + mfi * frameduration;
+      when = whendesired - fliplead0;
+    end
+
   else
     % if there were no glitches, just proceed from the last recorded time
-    % and set the when time to 9/10 a frame before the desired time.
+    % and set the when time to a little bit before the desired time.
     % notice that the accuracy of the mfi is only weakly assumed here,
     % since we keep resetting to the empirical VBLTimestamp.
     whendesired = VBLTimestamp + mfi * frameduration;
-    when = whendesired - mfi * (9/10);  % should we be less aggressive??
+    when = whendesired - fliplead0;  % should we be less aggressive??
   end
   
 end
