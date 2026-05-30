@@ -418,8 +418,10 @@ case {89 90 91 92 93 94}
   stimfile = fullfile(stimulusdir,'workspace_retinotopyCaltsmash.mat');
 case {101 102 103 104 105 106}
   stimfile = fullfile(stimulusdir,'workspace_retinotopyCaltsmashWORDS.mat');
-case {131 135}
+case {131}
   stimfile = fullfile(stimulusdir,'nsd_stimuli.hdf5');
+case {135}
+  stimfile = fullfile(stimulusdir,'nsdmini_stimuli.hdf5');
 case {132}
   stimfile =  fullfile(stimulusdir,'nsdsynthetic_stimuli.hdf5');
   stimfile2 = fullfile(stimulusdir,sprintf('nsdsynthetic_colorstimuli_subj%02d.hdf5',setnum(2)));
@@ -653,19 +655,8 @@ if ~exist('images','var') || isempty(images)
     for p=1:length(imagelist)
       fprintf('loading image %d of %d.\n',p,length(imagelist));
 
-      % this is the ID relative to the full 73k image set
-      finalimageid = a1.special515ix(imagelist(p))
-      
-      % h5disp(stimfile);
-      % HDF5 croppedImgBrick.hdf5 
-      % Group '/' 
-      %     Dataset 'imgBrick' 
-      %         Size:  3x425x425x73000
-      %         MaxSize:  3x425x425x73000
-      %         Datatype:   H5T_STD_U8LE (uint8)
-      %         ChunkSize:  []
-      %         Filters:  none
-      %         FillValue:  0
+      % this is the ID relative to the 515 image set
+      finalimageid = imagelist(p);
       
       % load one image (R x C x 3, uint8)
       images{p} = permute(h5read(stimfile,'/imgBrick',[1 1 1 finalimageid],[3 425 425 1]),[3 2 1]);
