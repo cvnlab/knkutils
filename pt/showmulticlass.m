@@ -171,7 +171,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 %   128 is readingF (second run type (other 50 distinct), keyed on date)
 %   129 is readingFalt (first run type (50 distinct), keyed on date)
 %   130 is readingFalt (second run type (other 50 distinct), keyed on date)
-%   [131 S E R T] where S is the subject number between 1-8, E is the session
+%   [131 S E R T] is nsd where S is the subject number between 1-8, E is the session
 %     number between 1-40, R is the run number between 1-12, and T is either
 %     0 meaning do the regular run or N (between 1 and 75) meaning do the
 %     run starting at trial N. However, a special case is N being equal to
@@ -180,6 +180,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 %     R is the run number between 1-4.
 %   133 is wnC11alt (like wnC11 but shorter in duration)
 %   [134 R] is nslook, where R is the run number between 1-10. 
+%   [135 R] is nsdmini, where R is the run number between 1-10.
 %   default: 1.
 % <isseq> (optional) is whether to do the special sequential showing case.  should be either 0 which
 %   means do nothing special, or a positive integer indicating which frame to use.  if a positive
@@ -224,6 +225,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 % show the stimulus and then save workspace (except the variable 'images') to <outfile>.
 %
 % history:
+% 2026/05/30 - implement 135 (nsdmini)
 % 2026/04/20 - major change for eyelink configuration to use pteyelinkon.m !!!!
 % 2026/04/20 - add <fliplead>,<ptime>,<pteyelinkonparams> inputs; implement exp 134
 % 2019/10/14 - final tweaks to 132
@@ -316,6 +318,7 @@ infofile_version2 = fullfile(stimulusdir,'multiclassinfo_version2.mat');
 infofile_hrf = fullfile(stimulusdir,'multiclassinfo_hrf.mat');
 infofile_nsd = fullfile(stimulusdir,'nsd_expdesign.mat');
 infofile_nsdsynthetic =   fullfile(stimulusdir,'nsdsynthetic_expdesign.mat');
+infofile_nsdmini = fullfile(stimulusdir,'nsdmini_expdesign.mat');
 infofile_nslook = fullfile(stimulusdir,'nslook_expdesign.mat');
 switch setnum(1)
 case {1 2 3 6 7 8}
@@ -415,7 +418,7 @@ case {89 90 91 92 93 94}
   stimfile = fullfile(stimulusdir,'workspace_retinotopyCaltsmash.mat');
 case {101 102 103 104 105 106}
   stimfile = fullfile(stimulusdir,'workspace_retinotopyCaltsmashWORDS.mat');
-case {131}
+case {131 135}
   stimfile = fullfile(stimulusdir,'nsd_stimuli.hdf5');
 case {132}
   stimfile =  fullfile(stimulusdir,'nsdsynthetic_stimuli.hdf5');
@@ -583,6 +586,75 @@ if ~exist('images','var') || isempty(images)
 
       % this is the ID relative to the full 73k image set
       finalimageid = a1.subjectim(setnum(2),imagelist(p));
+      
+      % h5disp(stimfile);
+      % HDF5 croppedImgBrick.hdf5 
+      % Group '/' 
+      %     Dataset 'imgBrick' 
+      %         Size:  3x425x425x73000
+      %         MaxSize:  3x425x425x73000
+      %         Datatype:   H5T_STD_U8LE (uint8)
+      %         ChunkSize:  []
+      %         Filters:  none
+      %         FillValue:  0
+      
+      % load one image (R x C x 3, uint8)
+      images{p} = permute(h5read(stimfile,'/imgBrick',[1 1 1 finalimageid],[3 425 425 1]),[3 2 1]);
+      
+      % hack so that ptviewmovie.m knows this is the color case
+      if p==1
+        images{p} = repmat(images{p},[1 1 1 2]);
+      end
+      
+    end
+    
+    % clean up
+    clear a1;
+
+  % this is a special case. here we do all the dirty work for this experiment,
+  % every time the experiment script is called.
+  case 135  % nsdmini
+  
+    % quick sanity check
+    assert(setnum(2)>=1 && setnum(2)<=10);
+
+    % load the experiment design information
+    a1 = load(infofile_nsdmini);
+
+    % how many stim trials in each of the 10 runs?
+    numstimperrun = repmat(103,[1 10]);
+
+    % figure out the ordering in the current run.
+    % 1 x 103 with the sequence of stimulus trials (indices relative to 515)
+    curordering = a1.masterordering(sum(numstimperrun(1:setnum(2)-1)) + (1:numstimperrun(setnum(2))));
+
+    % figure out master list, 1 x N with the sorted distinct list of images (relative to 515) being shown in this run
+    imagelist = flatten(unique(curordering));
+
+    % just like curordering except indices are now relative to the imagelist
+    curorderingREDUCED = calcposition(imagelist,curordering);
+
+    % construct trialpattern (120 trials x N unique images)
+    trialpattern = zeros(120,length(imagelist));
+    cnt = 1;
+    for p=1:size(trialpattern,1)
+      if a1.stimpattern(setnum(2),p)
+        trialpattern(p,curorderingREDUCED(cnt)) = 1;
+        cnt = cnt + 1;
+      end
+    end
+    assert(cnt-1 == length(curorderingREDUCED));
+    
+    % construct the "on-pattern". all trials are 3 seconds (at 10 frames per second).
+    onpattern = [ones(1,20) zeros(1,10)];
+
+    % load the actual images
+    images = cell(1,length(imagelist));
+    for p=1:length(imagelist)
+      fprintf('loading image %d of %d.\n',p,length(imagelist));
+
+      % this is the ID relative to the full 73k image set
+      finalimageid = a1.special515ix(imagelist(p))
       
       % h5disp(stimfile);
       % HDF5 croppedImgBrick.hdf5 
@@ -1826,6 +1898,18 @@ else
         framedesign{p} = repmat(ones(1,30),[sum(trialpattern(:,p)) 1]);
       end
     end
+  case {135}
+    if isseq
+      framedesign = {};
+      for p=1:length(imagelist)
+        framedesign{p} = isseq;
+      end
+    else
+      framedesign = {};
+      for p=1:length(imagelist)
+        framedesign{p} = repmat(ones(1,20),[sum(trialpattern(:,p)) 1]);
+      end
+    end
   case {132}
     if isseq
       framedesign = {};
@@ -1976,7 +2060,7 @@ if isseq
   case {45}
     trialpattern = eye(30);
     onpattern = [1];
-  case {131 132}
+  case {131 132 135}
     trialpattern = eye(length(imagelist));
     onpattern = [1];
   case {134}
@@ -2223,7 +2307,7 @@ else
       trialpattern(1+(zzz-1)*3+1,actualtrials(zzz)) = 1;  % 12-s
       trialpattern(1+(zzz-1)*3+2,actualtrials(zzz)) = 1;  % 12-s
     end
-  case {131 132 134}
+  case {131 132 134 135}
     % N/A because we calculated this above already
   case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119}
     % N/A
@@ -2459,7 +2543,7 @@ else
     classorder = [51:69 72:73];
   case 9
     classorder = [1];
-  case {131 132}
+  case {131 132 135}
     classorder = 1:length(imagelist);
   case {134}
     classorder = 1:14;
@@ -2467,7 +2551,7 @@ else
     % N/A but do this just so the below line won't fail
     classorder = [];
   end
-  if ~isseq && ~ismember(setnum(1),[26 109 110 111 131 132 134])  % 109-111,131,132,134 is special. we pre-specify, so no randomization etc.
+  if ~isseq && ~ismember(setnum(1),[26 109 110 111 131 132 134 135])  % 109-111,131,132,134,135 is special. we pre-specify, so no randomization etc.
     classorder = permutedim(classorder);
     
     % make sure beginning and end are stimulus trials and make sure no two consecutive blank trials
