@@ -12,7 +12,7 @@ function results = ptviewmoviecheck2(timeframes,timekeys,triggerkeys,deltatime,w
 %   amount of time elapses while the buttons/triggers are still
 %   detected. Default is 40.
 % <wanthide> (optional) is whether to make the two figure windows that we create
-%   invisible. Default: 0.
+%   invisible. Default: 0. If NaN, we do not create windows.
 %
 % Draw some figures visualizing the contents of <timeframes> and <timekeys>.
 % In the <timekeys> figure, the <mristarttime> is a black line, <buttontimes> are
@@ -79,9 +79,11 @@ results.numwarnings = 0;
 %% Make timeframes figure
 
 % look at difference in frame times
-drawnow; figureprep([50 500 1200 300],~wanthide); plot(diff(timeframes),'r-');
-xlabel('frame difference'); ylabel('duration (seconds)');
-title('inspection of timeframes (dropped frames => NaN => gaps)');
+if ~isnan(wanthide)
+  drawnow; figureprep([50 500 1200 300],~wanthide); plot(diff(timeframes),'r-');
+  xlabel('frame difference'); ylabel('duration (seconds)');
+  title('inspection of timeframes (dropped frames => NaN => gaps)');
+end
 
 %% Expand simultaneous-keypress cases
 
@@ -292,21 +294,23 @@ end
 %% Plot the buttons/triggers
 
 % look at timekeys
-drawnow; figureprep([50 50 1200 300],~wanthide); hold on;
-ylim([-.1 1.5]);
-straightline(mristarttime,'v','k-',[0 0.75]);
-cnt = 1;
-for p=1:length(buttontimes)
-  straightline(buttontimes(p),'v',[getcolorchar(cnt) '-'],[0 1]);
-  text(buttontimes(p),1.1 + 0.3*rand,buttonpressed{p},'HorizontalAlignment','center','Color',getcolorchar(cnt));
-  cnt = cnt + 1;
+if ~isnan(wanthide)
+  drawnow; figureprep([50 50 1200 300],~wanthide); hold on;
+  ylim([-.1 1.5]);
+  straightline(mristarttime,'v','k-',[0 0.75]);
+  cnt = 1;
+  for p=1:length(buttontimes)
+    straightline(buttontimes(p),'v',[getcolorchar(cnt) '-'],[0 1]);
+    text(buttontimes(p),1.1 + 0.3*rand,buttonpressed{p},'HorizontalAlignment','center','Color',getcolorchar(cnt));
+    cnt = cnt + 1;
+  end
+  set(straightline(triggertimes,'v','k-',[-.1 .5]),'Color',[.7 .7 .7]);
+  straightline(donetime,'v','k-',[0 0.75]);
+  xlabel('Time (seconds)');
+  title('Inspection of buttons and triggers');
+  xlim0 = xlim;
+  xlim([-10 xlim0(2)+10]);
 end
-set(straightline(triggertimes,'v','k-',[-.1 .5]),'Color',[.7 .7 .7]);
-straightline(donetime,'v','k-',[0 0.75]);
-xlabel('Time (seconds)');
-title('Inspection of buttons and triggers');
-xlim0 = xlim;
-xlim([-10 xlim0(2)+10]);
 
 %% Report to the command window
 
