@@ -315,15 +315,15 @@ end
 %% Report to the command window
 
 fprintf('==============================================================\n');
-fprintf('Experiment duration (empirical) was %.3f.\n',totaldur);
-fprintf('Frames per sec (empirical) was %.6f.\n',1/mdtf);
-fprintf('Number of dropped frames: %d.\n',droppedcnt);
-fprintf('Median trigger diff: %.6f.\n',mdf);
+fprintf('Experiment duration (empirical) was %.3f.\n',results.totaldur);
+fprintf('Frames per sec (empirical) was %.6f.\n',1/results.mdtf);
+fprintf('Number of dropped frames: %d.\n',results.droppedcnt);
+fprintf('Median trigger diff: %.6f.\n',results.mdf);
 fprintf('==============================================================\n');
 fprintf('Number of pressed buttons:\n');
-for pp=1:length(userkeys)
+for pp=1:length(results.userkeys)
   fprintf('%s: % 5d\n', ...
-          userkeys{pp}, ...
-          userkeycounts(pp));
+          results.userkeys{pp}, ...
+          results.userkeycounts(pp));
 end
 fprintf('==============================================================\n');
