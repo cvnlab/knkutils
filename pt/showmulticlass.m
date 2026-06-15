@@ -181,6 +181,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 %   133 is wnC11alt (like wnC11 but shorter in duration)
 %   [134 R] is nslook, where R is the run number between 1-10. 
 %   [135 R] is nsdmini, where R is the run number between 1-10.
+%   136 is afloc.
 %   default: 1.
 % <isseq> (optional) is whether to do the special sequential showing case.  should be either 0 which
 %   means do nothing special, or a positive integer indicating which frame to use.  if a positive
@@ -225,6 +226,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 % show the stimulus and then save workspace (except the variable 'images') to <outfile>.
 %
 % history:
+% 2026/06/14 - implement 136 (afloc)
 % 2026/05/30 - implement 135 (nsdmini)
 % 2026/04/20 - major change for eyelink configuration to use pteyelinkon.m !!!!
 % 2026/04/20 - add <fliplead>,<ptime>,<pteyelinkonparams> inputs; implement exp 134
@@ -378,6 +380,8 @@ case {123 124 125 126}
   stimfile = fullfile(stimulusdir,'workspace_wnC13.mat');
 case {122}
   stimfile = fullfile(stimulusdir,'workspace_wnC12.mat');
+case {136}
+  stimfile = fullfile(stimulusdir,'workspace_afloc.mat');
 case {14}
   stimfile = fullfile(stimulusdir,'workspace_wnD.mat');
 case {15}
@@ -820,6 +824,62 @@ end
 numinclass = cellfun(@(x) size(x,choose(iscolor,4,3)),images);  % a vector with number of images in each class
 if setnum(1)==117
   numinclass = zeros(1,10);  % HACK to deal with the fact that all viewpoints are stuck in the first stimulus element
+end
+
+%%%%%%%%%%%%%%%%%%%%% on-the-fly experimental design
+
+switch setnum(1)
+
+% this is a special case. here we do all the dirty work for this experiment,
+% every time the experiment script is called.
+case 136
+
+  % construct the "on-pattern". all trials are 4.5 seconds (at 60 frames per second).
+  onpattern = [ones(1,240) zeros(1,30)];  % 4/.5
+
+  % figure out the chunks of stimulus trials surrounding blank trials
+  chunksizes = distributewithconstraints(73,8:13,6,0);  % 73 stim trials into 6 chunks
+
+  % figure out clean stim trial ordering
+  while 1
+
+    % randomize, under the constraint that no 1-back events exist
+    masterordering = permutedim(repmat(1:22,[1 3]));  % 22x3 = 66 stim trials + 7 1-back trials
+    if all(diff(masterordering)~=0)  % if all trials are different from previous trial
+      break;
+    else
+      fprintf('failed. regenerating.\n');
+    end
+
+  end
+
+  % insert 1-back events
+  numob = 7;                                    % number of 1-back events to add
+  ix = randperm(length(masterordering));        % we will select the first <numob> of these
+  temp = masterordering;                        % original ordering
+  temp = cat(1,temp,NaN*ones(1,length(temp)));  % NaNs in second row
+  temp(2,ix(1:numob)) = temp(1,ix(1:numob));    % insert the repetition for the special ones
+  temp = filterout(flatten(temp),NaN,0);        % flatten and remove NaNs
+  masterordering = temp;                        % record
+
+  % check that we have exactly the number of 1-back events that we want
+  assert(isequal(sum(diff(masterordering)==0),numob));
+
+  % construct trialpattern (85 trials x 22 conditions, 0/1 indicating each onset)
+  trialpattern = zeros(85,22);
+  cnt = 3;    % start with 3 null trials
+  mocnt = 0;  % counter for masterordering
+  for p=1:length(chunksizes)
+    for q=1:chunksizes(p)
+      trialpattern(cnt+1,masterordering(mocnt+1)) = 1;
+      cnt = cnt + 1;
+      mocnt = mocnt + 1;
+    end
+    cnt = cnt + 1;  % insert blank trial
+  end
+  cnt = cnt - 1;  % undo last blank trial
+  assert(mocnt==length(masterordering));
+
 end
 
 %%%%%%%%%%%%% perform run-specific randomizations (NOTE THAT THERE ARE HARD-CODED CONSTANTS IN HERE)
@@ -1925,6 +1985,38 @@ else
         framedesign{p} = repmat(ones(1,1),[sum(trialpattern(:,p)) 1]);
       end
     end
+  case {136}
+    if isseq
+      framedesign = {};
+      for p=1:22
+        framedesign{p} = isseq;
+      end
+    else
+      framedesign = {};
+      for p=1:22
+        if p >= 1 && p <= 12
+          for q=1:sum(trialpattern(:,p))
+            temp = randperm(144);
+            framedesign{p}(q,:) = upsamplematrix(temp(1:8),30,2,[],'nearest');  % pull a random distinct 8 (2 images per second) from 144
+          end
+        elseif p > 12 && p <= 12+8
+          for q=1:sum(trialpattern(:,p))
+            temp = randperm(144);
+            framedesign{p}(q,:) = upsamplematrix(temp(1:40),6,2,[],'nearest');  % pull a random distinct 40 (10 images per second) from 144
+          end
+        elseif p==21
+          temp = randperm(18);  
+          for q=1:sum(trialpattern(:,p))
+            framedesign{p}(q,:) = (temp(q)-1)*240+(1:240);  % 18 movies (240 frames each). choose distinct movies.
+          end
+        elseif p==22
+          temp = randperm(18);  
+          for q=1:sum(trialpattern(:,p))
+            framedesign{p}(q,:) = repmat(temp(q),[1 240]);  % one frame static
+          end
+        end
+      end
+    end
   case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119}
     % N/A
   end
@@ -2056,6 +2148,9 @@ if isseq
     onpattern = [1];
   case {134}
     trialpattern = eye(14);
+    onpattern = [1];
+  case {136}
+    trialpattern = eye(22);
     onpattern = [1];
   case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119}
     % N/A
@@ -2298,7 +2393,7 @@ else
       trialpattern(1+(zzz-1)*3+1,actualtrials(zzz)) = 1;  % 12-s
       trialpattern(1+(zzz-1)*3+2,actualtrials(zzz)) = 1;  % 12-s
     end
-  case {131 132 134 135}
+  case {131 132 134 135 136}
     % N/A because we calculated this above already
   case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119}
     % N/A
@@ -2538,11 +2633,13 @@ else
     classorder = 1:length(imagelist);
   case {134}
     classorder = 1:14;
+  case {136}
+    classorder = 1:22;
   case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119}
     % N/A but do this just so the below line won't fail
     classorder = [];
   end
-  if ~isseq && ~ismember(setnum(1),[26 109 110 111 131 132 134 135])  % 109-111,131,132,134,135 is special. we pre-specify, so no randomization etc.
+  if ~isseq && ~ismember(setnum(1),[26 109 110 111 131 132 134 135 136])  % 109-111,131,132,134,135,136 is special. we pre-specify, so no randomization etc.
     classorder = permutedim(classorder);
     
     % make sure beginning and end are stimulus trials and make sure no two consecutive blank trials
