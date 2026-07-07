@@ -2,13 +2,15 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
   ptviewmovie(images,frameorder,framecolor,frameduration,fixationorder,fixationcolor,fixationsize, ...
               grayval,detectinput,wantcheck,offset,moviemask,movieflip,scfactor,allowforceglitch, ...
               triggerfun,framefiles,frameskip,triggerkey,specialcon,trialtask,maskimages,specialoverlay, ...
-              frameevents,framefuncs,setupscript,cleanupscript,stereocontrol,stereoflip,fliplead,ptime)
+              frameevents,framefuncs,setupscript,cleanupscript,stereocontrol,stereoflip,fliplead,ptime, ...
+              mixorder,miximages)
 
 % function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   ptviewmovie(images,frameorder,framecolor,frameduration,fixationorder,fixationcolor,fixationsize, ...
 %               grayval,detectinput,wantcheck,offset,moviemask,movieflip,scfactor,allowforceglitch, ...
 %               triggerfun,framefiles,frameskip,triggerkey,specialcon,trialtask,maskimages,specialoverlay, ...
-%               frameevents,framefuncs,setupscript,cleanupscript,stereocontrol,stereoflip,fliplead,ptime)
+%               frameevents,framefuncs,setupscript,cleanupscript,stereocontrol,stereoflip,fliplead,ptime, ...
+%               mixorder,miximages)
 % 
 % <images> is a .mat file with 'images' as a uint8
 %   A x B x 1/3 x N matrix with different images along the fourth dimension.  
@@ -267,6 +269,18 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   clearly, ptime should be no more than mfi * frameduration (since if we really
 %   required that much time, the presentation could never adequately keep up).
 %   Default: 10/1000.
+% <mixorder> (optional) is a vector of non-negative integers, same size as
+%   <frameorder>. Positive integers refer to 1-indexed miximages in <miximages>. 
+%   Zero means do no mixing. This vector determines what mix images to apply.
+%   Default is zeros(1,N) where N is the total number of frames.
+% <miximages> (optional) is a .mat file with 'miximages' as a 2 x M cell.
+%   Can also be the 2 x M cell directly.
+%   There are M different miximages, referred to by their index (1-indexed).
+%   For the pth miximage, miximages{1,p} should be a row vector of pixel 
+%   indices (1 x q), and miximages{2,p} should be either 4 x q, uint8 format 
+%   with RGBA values, or 2 x q, uint8 format with GA values (gray and alpha).
+%   For the alpha channel, as usual, 255 means pass, 0 means background.
+%   Default is [] which means there are no miximages.
 % return <timeframes> as a 1 x size(<frameorder>,2) vector with the time of each frame showing.
 %   (time is relative to the time of the first frame.) Note that as of April 20, 2026, there
 %   can be NaNs in <timeframes> which indicate dropped frames.
@@ -319,6 +333,7 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   So it is important to test your particular setup!
 %
 % history:
+% 2026/07/07 - implement <mixorder> and <miximages>
 % 2026/04/20 - MAJOR CHANGE TO TIMING HANDLING: (1) we now always read input instantaneously.
 %              (2) we now enable dropping of frames (if necessary). (3) we now have the
 %              <fliplead> and <ptime> inputs.  You SHOULD TEST thoroughly on your setup!
@@ -473,6 +488,12 @@ end
 if ~exist('ptime','var') || isempty(ptime)
   ptime = 10/1000;
 end
+if ~exist('mixorder','var') || isempty(mixorder)
+  mixorder = [];  % deal with later
+end
+if ~exist('miximages','var') || isempty(miximages)
+  miximages = [];
+end
 if ischar(images)
   images = {images};
 end
@@ -556,6 +577,15 @@ if ~isa(maskimages,'uint8')
   maskimages = uint8(255*maskimages);
 end
 
+% load in the miximages
+if ~isempty(miximages)
+  if ischar(miximages)
+    fprintf('loading miximages: starting...\n');
+    miximages = loadmulti(miximages,'miximages');
+    fprintf('loading miximages: done\n');
+  end
+end
+
 % deal with mask
 if ~isempty(moviemask)
   fprintf('applying mask: starting...\n');
@@ -632,6 +662,9 @@ end
 % deal with input (finally)
 if isempty(frameorder)
   frameorder = 1:nimages;
+end
+if isempty(mixorder)
+  mixorder = zeros(1,size(frameorder,2));
 end
 if isempty(framecolor)
   framecolor = 255*ones(size(frameorder,2),3);
@@ -778,15 +811,19 @@ sound(zeros(1,100),1000);
 % precomputations for case when images is a cell of uint8
 iscellimages = iscell(images);
 if iscellimages
-  whs = zeros(size(frameorder,2),1+size(frameorder,1));
+  whs = zeros(size(frameorder,2),1+size(frameorder,1)+1);  % the final +1 is for mixorder
   for frame=1:size(frameorder,2)
     if frameorder(1,frame) ~= 0
       whs(frame,1) = firstel(find(frameorder(1,frame) <= csimages));
       whs(frame,2) = size(images{whs(frame,1)},dimwithim) - (csimages(whs(frame,1))-frameorder(1,frame));
       if size(frameorder,1)==2
         whs(frame,3) = frameorder(2,frame);
+        whs(frame,4) = mixorder(1,frame);
       elseif size(frameorder,1)==3
         whs(frame,3:4) = frameorder(2:3,frame);
+        whs(frame,5) = mixorder(1,frame);
+      else
+        whs(frame,3) = mixorder(1,frame);  % this is the vanilla case
       end
     end
   end
@@ -1142,39 +1179,86 @@ for frame=1:frameskip:size(frameorder,2)+1
     extracircshift = [0 0];
     if iscellimages
       if dimwithim==4   % THIS IS VERY VERY UGLY
+      
+        % get the image
+        baseim = images{whs(frame0,1)}(:,:,:,whs(frame0,2));
+
+        % do we need to mix?
+        if whs(frame0,end) ~= 0  % this checks mixorder
+          baseimsz = size(baseim);
+          pixix  = miximages{1,whs(frame0,end)};
+          pixval = miximages{2,whs(frame0,end)};
+          alpval = double(pixval(4,:)')/255;  % P x 1
+          baseim = squish(baseim,2);
+          baseim(pixix,:) = uint8(double(baseim(pixix,:)) .* (1-alpval) + double(pixval(1:3,:)') .* (alpval));
+          baseim = reshape(baseim,baseimsz);
+        end
+
         switch size(whs,2)
-        case 2
-          txttemp = feval(flipfun,images{whs(frame0,1)}(:,:,:,whs(frame0,2)));
-        case 3
-          MI = maskimages(:,:,whs(frame0,3));
-          txttemp = feval(flipfun,cat(3,images{whs(frame0,1)}(:,:,:,whs(frame0,2)),MI));
-        case 4
-          txttemp = feval(flipfun,images{whs(frame0,1)}(:,:,:,whs(frame0,2)));
+        case 2+1
+          txttemp = feval(flipfun,baseim);
+        case 3+1
+          if whs(frame0,3)~=0
+            MI = maskimages(:,:,whs(frame0,3));
+            txttemp = feval(flipfun,cat(3,baseim,MI));
+          else
+            txttemp = feval(flipfun,baseim);
+          end
+        case 4+1
+          txttemp = feval(flipfun,baseim);
           extracircshift = whs(frame0,3:4) .* (-2*(movieflip-.5));
         end
         texture = Screen('MakeTexture',win,txttemp);
       else
+        baseim = images{whs(frame0,1)}(:,:,whs(frame0,2));
+        if whs(frame0,end) ~= 0  % this checks mixorder
+          baseimsz = size(baseim);
+          pixix  = miximages{1,whs(frame0,end)};
+          pixval = miximages{2,whs(frame0,end)};
+          alpval = double(pixval(4,:)')/255;  % P x 1
+          baseim = squish(baseim,2);
+          baseim(pixix,:) = uint8(double(baseim(pixix,:)) .* (1-alpval) + double(pixval(1,:)') .* (alpval));  % Notice grayscale
+          baseim = reshape(baseim,baseimsz);
+        end
         switch size(whs,2)
-        case 2
-          txttemp = feval(flipfun,images{whs(frame0,1)}(:,:,whs(frame0,2)));
-        case 3
-          MI = maskimages(:,:,whs(frame0,3));
-          txttemp = feval(flipfun,cat(3,images{whs(frame0,1)}(:,:,whs(frame0,2)),MI));
-        case 4
-          txttemp = feval(flipfun,images{whs(frame0,1)}(:,:,whs(frame0,2)));
+        case 2+1
+          txttemp = feval(flipfun,baseim);
+        case 3+1
+          if whs(frame0,3)~=0
+            MI = maskimages(:,:,whs(frame0,3));
+            txttemp = feval(flipfun,cat(3,baseim,MI));
+          else
+            txttemp = feval(flipfun,baseim);
+          end
+        case 4+1
+          txttemp = feval(flipfun,baseim);
           extracircshift = whs(frame0,3:4) .* (-2*(movieflip-.5));
         end
         texture = Screen('MakeTexture',win,txttemp);
       end
     else
+      baseim = images(:,:,:,frameorder(1,frame0));
+      if mixorder(frame0) ~= 0
+        baseimsz = size(baseim);
+        pixix  = miximages{1,mixorder(frame0)};
+        pixval = miximages{2,mixorder(frame0)};
+        alpval = double(pixval(4,:)')/255;  % P x 1
+        baseim = squish(baseim,2);
+        baseim(pixix,:) = uint8(double(baseim(pixix,:)) .* (1-alpval) + double(pixval(1:3,:)') .* (alpval));
+        baseim = reshape(baseim,baseimsz);
+      end
       switch size(frameorder,1)
       case 1
-        txttemp = feval(flipfun,images(:,:,:,frameorder(1,frame0)));
+        txttemp = feval(flipfun,baseim);
       case 2
-        MI = maskimages(:,:,frameorder(2,frame0));
-        txttemp = feval(flipfun,cat(3,images(:,:,:,frameorder(1,frame0)),MI));
+        if frameorder(2,frame0)~=0
+          MI = maskimages(:,:,frameorder(2,frame0));
+          txttemp = feval(flipfun,cat(3,baseim,MI));
+        else
+          txttemp = feval(flipfun,baseim);
+        end
       case 3
-        txttemp = feval(flipfun,images(:,:,:,frameorder(1,frame0)));
+        txttemp = feval(flipfun,baseim);
         extracircshift = frameorder(2:3,frame0)' .* (-2*(movieflip-.5));
       end
       texture = Screen('MakeTexture',win,txttemp);
