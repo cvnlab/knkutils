@@ -857,7 +857,7 @@ if ~exist('images','var') || isempty(images)
     % change contrast of noise patterns
     if setnum(4) ~= 100
       fprintf('changing contrast of noise');
-      for ppp=1:size(images,4)
+      for ppp=1:60*30  % ONLY MODIFY the noise patterns, not the target encoding
         statusdots(ppp,size(images,4));
         images(:,:,:,ppp) = (double(images(:,:,:,ppp)) - 127) * setnum(4)/100 + 127;  % setnum(4) is noisecon
       end
