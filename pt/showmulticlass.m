@@ -3087,8 +3087,10 @@ case {137 138 139}
       for tt=1:totalslots
         if rand < setnum(6)/setnum(3)
           totry = permutedim(targetconfigs);
+          targetstatus = 1;
         else
           totry = permutedim(ntargetconfigs);
+          targetstatus = 0;
         end
         for zz=1:length(totry)  % try each one
           c0 = totry(zz);
@@ -3113,7 +3115,7 @@ case {137 138 139}
 %             doover = 1;
 %           end
           if ~doover
-            objseq = [objseq c1];
+            objseq = [objseq c1+targetstatus*j];  % +j means target!!
             c0prev = c0;
             break;
           end
@@ -3127,6 +3129,11 @@ case {137 138 139}
     end
     totseq = [totseq objseq];
   end
+  
+  % remove imaginary component and make targetoccurrence
+  targetoccurrence = frameorder(2,:);
+  targetoccurrence(frameorder(2,:)~=0) = upsamplematrix(imag(totseq),60/setnum(3),2,[],0);  % fill with 0!
+  totseq = real(totseq);
   
   % insert into mixorder
   mixorder(frameorder(2,:)~=0) = upsamplematrix(totseq,60/setnum(3),2,[],'nearest');
