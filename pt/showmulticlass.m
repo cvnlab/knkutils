@@ -1,12 +1,14 @@
-function [images,maskimages] = showmulticlass(outfile,offset,movieflip,frameduration,fixationinfo,fixationsize, ...
+function [images,maskimages,miximages] = showmulticlass(outfile,offset,movieflip,frameduration,fixationinfo,fixationsize, ...
   triggerfun,ptonparams,soafun,skiptrials,images,setnum,isseq,grayval,iscolor, ...
   numrep,con,existingfile,dres,triggerkey,framefiles,trialparams,eyelinkfile,maskimages,specialoverlay, ...
-  stimulusdir,frameevents,framefuncs,setupscript,cleanupscript,stereoflip,fliplead,ptime,pteyelinkonparams)
+  stimulusdir,frameevents,framefuncs,setupscript,cleanupscript,stereoflip,fliplead,ptime,pteyelinkonparams, ...
+  miximages)
 
-% function [images,maskimages] = showmulticlass(outfile,offset,movieflip,frameduration,fixationinfo,fixationsize, ...
+% function [images,maskimages,miximages] = showmulticlass(outfile,offset,movieflip,frameduration,fixationinfo,fixationsize, ...
 %   triggerfun,ptonparams,soafun,skiptrials,images,setnum,isseq,grayval,iscolor, ...
 %   numrep,con,existingfile,dres,triggerkey,framefiles,trialparams,eyelinkfile,maskimages,specialoverlay, ...
-%   stimulusdir,frameevents,framefuncs,setupscript,cleanupscript,stereoflip,fliplead,ptime,pteyelinkonparams)
+%   stimulusdir,frameevents,framefuncs,setupscript,cleanupscript,stereoflip,fliplead,ptime,pteyelinkonparams, ...
+%   miximages)
 %
 % <outfile> is the .mat file to save results to
 % <offset> is horizontal and vertical offset for display purposes (see ptviewmovie.m)
@@ -38,7 +40,8 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 %                [53 54] or [56 57 58] or [59 60 61] or [62 63 64 65] or [66] or [109 110] or [67 68 69 70 71 72] or
 %                [73 74 75 76 77] or [78 79 80 81] or [82 83 84 85 86 87  88] or [89 90 91 92 93 94] or 
 %                [95 96 97 98 99 100] or [101 102 103 104 105 106] or [107] or [108 112 113 114] or [111] or [115] or 
-%                [116] or [117] or [118 121 133] or [119] or [120] or [122] or [123 124 125 126] or [127 128 129 130]
+%                [116] or [117] or [118 121 133] or [119] or [120] or [122] or [123 124 125 126] or [127 128 129 130] or
+%                [137 138 139]
 % <setnum> (optional) is
 %   1 means the original 31 stimulus classes [15 frames, 3s / 3s]
 %   2 means the horizontally-modulated random space stimuli plus small-scale checkerboard and letters [15 frames, 3s / 3s]
@@ -182,6 +185,16 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 %   [134 R] is nslook, where R is the run number between 1-10. 
 %   [135 R] is nsdmini, where R is the run number between 1-10.
 %   136 is afloc.
+%   [137 objopacity objrate noisecon targetnum targetprob] is vcdprf CCW (wedge)
+%     objopacity is between 0 (transparent) and 1 (opaque)
+%     objrate is integer between 1-6 indicating Hz
+%     noisecon is between 0 and 100, indicating contrast (percentage)
+%     targetnum is an integer between 1-15
+%     targetprob is probability between 0 and 1.
+%       each configuration has probability=targetprob/objrate for target.
+%     NOTE: if you use cache mechanism, objopacity and noisecon are IGNORED!
+%   [138 "                                               ] is vcdprf CW (wedge)
+%   [139 "                                               ] is vcdprf BAR
 %   default: 1.
 % <isseq> (optional) is whether to do the special sequential showing case.  should be either 0 which
 %   means do nothing special, or a positive integer indicating which frame to use.  if a positive
@@ -210,7 +223,7 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 % <eyelinkfile> (optional) is the .edf file to save eyetracker data to.
 %   default is [] which means to do not attempt to use the Eyelink.
 % <maskimages> (optional) is a speed-up (no dependencies).  <maskimages> is applicable and can be reused only
-%   if <setnum> stays within [73 74 75 76 77] or [78 79] or [89 90 91 92 93 94] or [101 102 103 104 105 106] or [119]
+%   if <setnum> stays within [73 74 75 76 77] or [78 79] or [89 90 91 92 93 94] or [101 102 103 104 105 106] or [119] or [137 138 139]
 % <specialoverlay> (optional) is the input to ptviewmovie.m
 % <stimulusdir> (optional) is the directory that contains the stimulus .mat files.
 %   default to the parent directory of showmulticlass.m.
@@ -222,10 +235,13 @@ function [images,maskimages] = showmulticlass(outfile,offset,movieflip,framedura
 % <fliplead> (optional) is the input to ptviewmovie.m.
 % <ptime> (optional) is the input to ptviewmovie.m.
 % <pteyelinkonparams> (optional) is a cell vector of inputs to pteyelinkon.m. Default: {}.
+% <miximages> (optional) is a speed-up (no dependencies).  <miximages> is applicable and can be reused only
+%   if <setnum> stays within [137 138 139]
 %
-% show the stimulus and then save workspace (except the variable 'images') to <outfile>.
+% show the stimulus and then save workspace (except big variables) to <outfile>.
 %
 % history:
+% 2026/07/08 - implement 137-139 (vcdprf)
 % 2026/06/14 - implement 136 (afloc)
 % 2026/05/30 - implement 135 (nsdmini)
 % 2026/04/20 - major change for eyelink configuration to use pteyelinkon.m !!!!
@@ -420,6 +436,8 @@ case {78 79}
   stimfile = fullfile(stimulusdir,'workspace_retinotopyB.mat');
 case {89 90 91 92 93 94}
   stimfile = fullfile(stimulusdir,'workspace_retinotopyCaltsmash.mat');
+case {137 138 139}
+  stimfile = fullfile(stimulusdir,'workspace_vcdprf.mat');
 case {101 102 103 104 105 106}
   stimfile = fullfile(stimulusdir,'workspace_retinotopyCaltsmashWORDS.mat');
 case {131}
@@ -502,6 +520,9 @@ end
 if ~exist('pteyelinkonparams','var') || isempty(pteyelinkonparams)
   pteyelinkonparams = {};
 end
+if ~exist('miximages','var') || isempty(miximages)
+  miximages = [];
+end
 if ~isempty(existingfile)
   efile = load(existingfile,'framedesign','classorder','fixationorder','trialoffsets','digitrecord');
 end
@@ -515,6 +536,8 @@ case {109 110 111}
   else
     load(existingfile,'mastercuestim','digitnamerecord','digitcolorrecord','gentrialpattern','designmatrix');
   end
+case {137 138 139}
+  load(stimfile,'object_record');
 end
 
 %%%%%%%%%%%%% load in the stimuli
@@ -771,12 +794,14 @@ if ~exist('images','var') || isempty(images)
   otherwise
 
     % load images
+    fprintf('loading images and maskimages...');
     if exist('maskfile','var')
       load(stimfile,'images');
       load(maskfile,'maskimages');
     else
       load(stimfile,'images','maskimages');
     end
+    fprintf('done.\n');
     if ~exist('maskimages','var')
       maskimages = {};
     end
@@ -785,6 +810,11 @@ if ~exist('images','var') || isempty(images)
       wh = cellfun(@(x) ~isempty(x),images0);
       images(wh) = images0(wh);
       clear images0;
+    end
+    if ismember(setnum(1),[137 138 139])
+      fprintf('loading miximages...');
+      load(stimfile,'miximages');
+      fprintf('done.\n');
     end
 
   end
@@ -819,9 +849,39 @@ if ~exist('images','var') || isempty(images)
     fprintf('done!\n');
     toc
   end
+  
+  % special contrast and alpha change for 137,138,139
+  switch setnum(1)
+  case {137 138 139}
+
+    % change contrast of noise patterns
+    if setnum(4) ~= 100
+      fprintf('changing contrast of noise');
+      for ppp=1:size(images,4)
+        statusdots(ppp,size(images,4));
+        images(:,:,:,ppp) = (double(images(:,:,:,ppp)) - 127) * setnum(4)/100 + 127;  % setnum(4) is noisecon
+      end
+      fprintf('done.\n');
+    end
+    
+    % change alpha of the objects
+    if setnum(2) ~= 1
+      fprintf('changing object alpha');
+      for ppp=1:size(miximages,2)
+        statusdots(ppp,size(miximages,2));
+        miximages{2,ppp}(4,:) = uint8(double(miximages{2,ppp}(4,:)) * setnum(2));
+      end
+      fprintf('done.\n');
+    end
+    
+  end
 
 end
-numinclass = cellfun(@(x) size(x,choose(iscolor,4,3)),images);  % a vector with number of images in each class
+if iscell(images)
+  numinclass = cellfun(@(x) size(x,choose(iscolor,4,3)),images);  % a vector with number of images in each class
+else
+  numinclass = size(images,choose(iscolor,4,3));
+end
 if setnum(1)==117
   numinclass = zeros(1,10);  % HACK to deal with the fact that all viewpoints are stuck in the first stimulus element
 end
@@ -2017,7 +2077,7 @@ else
         end
       end
     end
-  case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119}
+  case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119  137 138 139}
     % N/A
   end
 end
@@ -2152,7 +2212,7 @@ if isseq
   case {136}
     trialpattern = eye(22);
     onpattern = [1];
-  case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119}
+  case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119  137 138 139}
     % N/A
   end
 else
@@ -2395,7 +2455,7 @@ else
     end
   case {131 132 134 135 136}
     % N/A because we calculated this above already
-  case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119}
+  case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119  137 138 139}
     % N/A
   end
 end
@@ -2635,7 +2695,7 @@ else
     classorder = 1:14;
   case {136}
     classorder = 1:22;
-  case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119}
+  case {73 74 75 76 77  78 79  89 90 91 92 93 94  101 102 103 104 105 106  119  137 138 139}
     % N/A but do this just so the below line won't fail
     classorder = [];
   end
@@ -2919,6 +2979,157 @@ case {93 101 103 105}
   slot0 = 16*15 + 4*(32*15) + 12*15 + 3*(32*15) + (1:28*15);
   frameorder(1,slot0) = mashgaponecyclefun();
   frameorder(2,slot0) = maskoffset + reversegaponecycle;
+
+case {137 138 139}
+
+  % define
+  totalframesstandard = 316*60;  % 316 s at 60 fps
+  cycleslots = 16*60 + 22*60 + (1:8*32*60);  % after 16-s targets, after 22-s rest, 8 cycles of 32 s
+  mashcycles = flatten((randintrange(1,30,[1 8*32],1) - 1) * 60 + (1:60)');  % noise pattern indices, no repeats, for 8*32-s duration, auto-expand with 60
+  standardcyclesCCW = repmat(upsamplematrix(([1 16:-1:2]),120,2,[],'nearest'),[1 8]);  % CCW wedge, expand for 2 s. all 8 cycles.
+  standardcyclesCW  = repmat(upsamplematrix((1:16),120,2,[],'nearest'),[1 8]);         %  CW wedge, expand for 2 s. all 8 cycles.
+  mashgaponecyclefun = @() flatten((randintrange(1,30,[1 28],1) - 1) * 60 + (1:60)');  % noise pattern indices, no repeats, for 28-s duration, auto-expand with 60
+  standardgaponecycle = upsamplematrix(1:14,120,2,[],'nearest');         % bar, expand for 2 s. standard order.
+  standardgaponecycleR = upsamplematrix(14:-1:1,120,2,[],'nearest');     % bar, expand for 2 s. reverse order.
+
+  % init
+  frameorder = zeros(2,totalframesstandard);  % first row are noise patterns, second row are masks
+  mixorder   = zeros(1,totalframesstandard);  % objects to mix in
+
+  % deal with initial target encoding phase
+  temp = 60*30 + (setnum(5)-1)*5 + (1:5);
+  temp(2,:) = 0;
+  temp = flatten(temp);
+  temp = upsamplematrix(temp,60,2,[],'nearest');  % 5 positions (1-s ON, 1-s OFF) = 10 s
+  frameorder(1,6*60 + (1:10*60)) = temp;
+
+  % deal with noise patterns and masks
+  switch setnum(1)
+  case 137
+
+    maskoffset = 28;
+    frameorder(1,cycleslots) = mashcycles;
+    frameorder(2,cycleslots) = maskoffset + standardcyclesCCW;  
+
+  case 138
+
+    maskoffset = 28;
+    frameorder(1,cycleslots) = mashcycles;
+    frameorder(2,cycleslots) = maskoffset + standardcyclesCW; 
+
+  case 139
+
+    % L to R
+    maskoffset = 14;
+    slot0 = 16*60 + 16*60 + 0*(32*60) + (1:28*60);
+    frameorder(1,slot0) = mashgaponecyclefun();
+    frameorder(2,slot0) = maskoffset + standardgaponecycle;
+
+    % D to U
+    maskoffset = 0;
+    slot0 = 16*60 + 16*60 + 1*(32*60) + (1:28*60);
+    frameorder(1,slot0) = mashgaponecyclefun();
+    frameorder(2,slot0) = maskoffset + standardgaponecycleR;
+
+    % R to L
+    maskoffset = 14;
+    slot0 = 16*60 + 16*60 + 2*(32*60) + (1:28*60);
+    frameorder(1,slot0) = mashgaponecyclefun();
+    frameorder(2,slot0) = maskoffset + standardgaponecycleR;
+
+    % U to D
+    maskoffset = 0;
+    slot0 = 16*60 + 16*60 + 3*(32*60) + (1:28*60);
+    frameorder(1,slot0) = mashgaponecyclefun();
+    frameorder(2,slot0) = maskoffset + standardgaponecycle;
+
+    % U to D
+    maskoffset = 0;
+    slot0 = 16*60 + 16*60 + 4*(32*60) + 12*60 + 0*(32*60) + (1:28*60);
+    frameorder(1,slot0) = mashgaponecyclefun();
+    frameorder(2,slot0) = maskoffset + standardgaponecycle;
+
+    % R to L
+    maskoffset = 14;
+    slot0 = 16*60 + 16*60 + 4*(32*60) + 12*60 + 1*(32*60) + (1:28*60);
+    frameorder(1,slot0) = mashgaponecyclefun();
+    frameorder(2,slot0) = maskoffset + standardgaponecycleR;
+
+    % D to U
+    maskoffset = 0;
+    slot0 = 16*60 + 16*60 + 4*(32*60) + 12*60 + 2*(32*60) + (1:28*60);
+    frameorder(1,slot0) = mashgaponecyclefun();
+    frameorder(2,slot0) = maskoffset + standardgaponecycleR;
+
+    % L to R
+    maskoffset = 14;
+    slot0 = 16*60 + 16*60 + 4*(32*60) + 12*60 + 3*(32*60) + (1:28*60);
+    frameorder(1,slot0) = mashgaponecyclefun();
+    frameorder(2,slot0) = maskoffset + standardgaponecycle;
+
+  end
+  
+  % deal with object mixing
+  apernum = sum(frameorder(2,:)~=0)/60/2;          % number of discrete aperture steps (each 2-s long)
+  totalslots = setnum(3)*2;                        % total number of configurations for one aperture step
+  targetconfigs = (setnum(5)-1)*5 + (1:5);         % indices of target configurations
+  ntargetconfigs = 76:125;                         % indices of everything else (non-targets)
+
+  % for each discrete aperture, what is the mask index? (out of 14+14+16)
+  apindex = frameorder(2,frameorder(2,:)~=0);
+  apindex = apindex(1:120:end);
+  
+  % construct the sequence
+  totseq = [];  % total sequence for the whole run
+  for ss=1:apernum
+    while 1
+      objseq = [];  % sequence for just this aperture
+      for tt=1:totalslots
+        if rand < setnum(6)/setnum(3)
+          totry = permutedim(targetconfigs);
+        else
+          totry = permutedim(ntargetconfigs);
+        end
+        for zz=1:length(totry)  % try each one
+          c0 = totry(zz);
+          % check for repeat objects
+          doover = 0;
+          if apindex(ss) <= 14
+            or0 = object_record{1}(apindex(ss),:,:);
+            c1 = (apindex(ss)-1)*125 + c0;
+          elseif apindex(ss) <= 14+14
+            or0 = object_record{2}(apindex(ss)-14,:,:);
+            c1 = 125*14 + (apindex(ss)-14-1)*125 + c0;
+          else
+            or0 = object_record{3}(apindex(ss)-28,:,:);
+            c1 = 125*(14+14) + (apindex(ss)-28-1)*125 + c0;
+          end
+          if length(objseq) > 0
+            if any(or0(1,:,c0) == or0(1,:,c0prev))  % if any object repeated
+              doover = 1;
+            end
+          end
+%           if ismember(c1,objseq)  % if the candidate config to add has already been used
+%             doover = 1;
+%           end
+          if ~doover
+            objseq = [objseq c1];
+            c0prev = c0;
+            break;
+          end
+        end
+      end
+      if length(objseq)==totalslots
+        break;
+      else
+        warning('failed to generate aperture sequence. trying again!');
+      end
+    end
+    totseq = [totseq objseq];
+  end
+  
+  % insert into mixorder
+  mixorder(frameorder(2,:)~=0) = upsamplematrix(totseq,60/setnum(3),2,[],'nearest');
 
 case {94 102 104 106}
 
@@ -3431,14 +3642,14 @@ if iscolor
     frameorder,framecolor,frameduration,fixationorder,fixationcolor,fixationsize,grayval,[],[], ...
       offset,choose(con==100,[],1-con/100),movieflip,scfactor,[],triggerfun,framefiles,[], ...
       triggerkey,specialcon,trialtask,maskimages,specialoverlay,frameevents,framefuncs,setupscript, ...
-      cleanupscript,stereocontrol,stereoflip,fliplead,ptime);
+      cleanupscript,stereocontrol,stereoflip,fliplead,ptime,mixorder,miximages);
 else
     % OLD AND WASTEFUL: reshape(cat(3,images{:}),size(images{1},1),size(images{1},2),1,[])
   [timeframes,timekeys,digitrecord,trialoffsets] = ptviewmovie(images, ...
     frameorder,framecolor,frameduration,fixationorder,fixationcolor,fixationsize,grayval,[],[], ...
       offset,choose(con==100,[],1-con/100),movieflip,scfactor,[],triggerfun,framefiles,[], ...
       triggerkey,specialcon,trialtask,maskimages,specialoverlay,frameevents,framefuncs,setupscript, ...
-      cleanupscript,stereocontrol,stereoflip,fliplead,ptime);
+      cleanupscript,stereocontrol,stereoflip,fliplead,ptime,mixorder,miximages);
 end
 
 % close out eyelink
@@ -3460,7 +3671,7 @@ end
 % figure out names of all variables except 'images' and 'maskimages' and others   [MAKE THIS INTO A FUNCTION?]
 vars = whos;
 vars = {vars.name};
-vars = vars(cellfun(@(x) ~isequal(x,'images') & ~isequal(x,'maskimages') & ~isequal(x,'validlocations') & ~isequal(x,'A') & ~isequal(x,'trialtask') & ~isequal(x,'mashgaponecyclefun'),vars));
+vars = vars(cellfun(@(x) ~isequal(x,'images') & ~isequal(x,'maskimages') & ~isequal(x,'miximages') & ~isequal(x,'validlocations') & ~isequal(x,'A') & ~isequal(x,'trialtask') & ~isequal(x,'mashgaponecyclefun'),vars));
   % avoid mashgaponecyclefun because it somehow saves workspace stuff
 
 % save
