@@ -169,6 +169,7 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 % <frameskip> (optional) is a positive integer indicating how many frames to skip
 %   when showing the movie.  for example, <frameskip>==2 means to show the 1st, 3rd,
 %   5th, ... frames.  default: 1.  can also be 1/N for some positive integer N.
+%   UPDATE: <frameskip> is no longer supported.
 % <triggerkey> (optional) is
 %   [] means any key can start the movie
 %   X means if the first character of KbName(keyCode) where keyCode is obtained from
@@ -333,6 +334,10 @@ function [timeframes,timekeys,digitrecord,trialoffsets] = ...
 %   So it is important to test your particular setup!
 %
 % history:
+% 2026/07/08 - MAJOR BUG FIX to 2026/04/20. previously, if a dropped frame occurred, the
+%              old frame (the one that was to be dropped) was actually the one shown at the
+%              new time. this also had the consequence that too many frames could show up
+%              in timeframes (it got inadvertently extended).  We have now fixed the behavior.
 % 2026/07/07 - implement <mixorder> and <miximages>
 % 2026/04/20 - MAJOR CHANGE TO TIMING HANDLING: (1) we now always read input instantaneously.
 %              (2) we now enable dropping of frames (if necessary). (3) we now have the
@@ -1138,13 +1143,13 @@ end
 
 % show the movie
 framecnt = 0;
-for frame=1:frameskip:size(frameorder,2)+1
+while 1   %%for frame=1:frameskip:size(frameorder,2)+1
   framecnt = framecnt + 1;
-  frame0 = floor(frame);
+  frame0 = floor(framecnt);
   reporttext = '';
 
   % we have to wait until the last frame is done.  so this is how we hack that in.
-  if frame0==size(frameorder,2)+1
+  if frame0 >= size(frameorder,2)+1
     while 1
       if GetSecs >= whendesired
         getoutearly = 1;
