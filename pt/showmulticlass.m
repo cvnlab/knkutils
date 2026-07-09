@@ -185,13 +185,15 @@ function [images,maskimages,miximages] = showmulticlass(outfile,offset,movieflip
 %   [134 R] is nslook, where R is the run number between 1-10. 
 %   [135 R] is nsdmini, where R is the run number between 1-10.
 %   136 is afloc.
-%   [137 objopacity objrate noisecon targetnum targetprob] is vcdprf CCW (wedge)
+%   [137 objopacity objrate noisecon targetnum targetprob cooldown] is vcdprf CCW (wedge)
 %     objopacity is between 0 (transparent) and 1 (opaque)
 %     objrate is integer between 1-6 indicating Hz
 %     noisecon is between 0 and 100, indicating contrast (percentage)
 %     targetnum is an integer between 1-15
 %     targetprob is probability between 0 and 1.
 %       each configuration has probability=targetprob/objrate for target.
+%     cooldown is a non-negative integer. after a target, we wait cooldown configurations
+%       until it is possible to have another target.
 %     NOTE: if you use cache mechanism, objopacity and noisecon are IGNORED!
 %   [138 "                                               ] is vcdprf CW (wedge)
 %   [139 "                                               ] is vcdprf BAR
@@ -3081,11 +3083,12 @@ case {137 138 139}
   
   % construct the sequence
   totseq = [];  % total sequence for the whole run
+  coolcnt = 0;
   for ss=1:apernum
     while 1
       objseq = [];  % sequence for just this aperture
       for tt=1:totalslots
-        if rand < setnum(6)/setnum(3)
+        if (coolcnt==0) && (rand < setnum(6)/setnum(3))
           totry = permutedim(targetconfigs);
           targetstatus = 1;
         else
@@ -3117,6 +3120,11 @@ case {137 138 139}
           if ~doover
             objseq = [objseq c1+targetstatus*j];  % +j means target!!
             c0prev = c0;
+            if targetstatus==1
+              coolcnt = setnum(7);  % 0 means green light, 1 means wait 1, etc.
+            else
+              coolcnt = max(0,coolcnt-1);
+            end
             break;
           end
         end
