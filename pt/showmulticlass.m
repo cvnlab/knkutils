@@ -3142,6 +3142,7 @@ case {137 138 139}
   % remove imaginary component and make targetoccurrence
   targetoccurrence = frameorder(2,:);
   targetoccurrence(frameorder(2,:)~=0) = upsamplematrix(imag(totseq),60/setnum(3),2,[],0);  % fill with 0!
+  targetoccurrence(6*60 + linspacefixeddiff(1,2*60,5)) = 1;  % the 5 target instruction images count as occurrences
   totseq = real(totseq);
   
   % insert into mixorder
