@@ -243,6 +243,7 @@ function [images,maskimages,miximages] = showmulticlass(outfile,offset,movieflip
 % show the stimulus and then save workspace (except big variables) to <outfile>.
 %
 % history:
+% 2026/07/09 - new cooldown for 137-139
 % 2026/07/08 - implement 137-139 (vcdprf)
 % 2026/06/14 - implement 136 (afloc)
 % 2026/05/30 - implement 135 (nsdmini)
