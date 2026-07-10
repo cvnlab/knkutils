@@ -543,6 +543,9 @@ case {137 138 139}
   load(stimfile,'object_record');
 end
 
+% init
+mixorder = [];
+
 %%%%%%%%%%%%% load in the stimuli
 
 if ~exist('images','var') || isempty(images)
