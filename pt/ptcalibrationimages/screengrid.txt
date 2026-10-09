@@ -1,0 +1,6 @@
+- designed for exactly 1920 x 1080
+- 25 squares from left to right
+- 14.0625 squares from top to bottom
+- black dot indicates the center of the image
+- the colors modulate downward in groups of 5
+- the saturation modulates rightwards in groups of 5
