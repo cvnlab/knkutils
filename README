@@ -542,6 +542,7 @@ mri/
 pt/
   calcfixationdotchangeperformance - perform analysis of behavioral data for experiments involving dot change detection
   preparedigits - generate some digits and letters as uint8 images
+  ptcalibratescreen - use PT to put up some useful calibration images
   pteyelinkoff - some eye-tracking related setup
   pteyelinkon - some eye-tracking related setup
   pton - initialize PsychToolbox stuff
