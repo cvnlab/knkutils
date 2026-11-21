@@ -24,7 +24,7 @@ function results = ptviewmoviecheck2(timeframes,timekeys,triggerkeys,deltatime,w
 %   <mdtf> is the mean frame-to-frame difference
 %   <totaldur> is the total empirical duration of the experiment (partial runs will have low <totaldur>)
 %   <donetime> is the time of the end of the experiment
-%   <timeframes> is like the original, but with linear interpolation to fix dropped fames
+%   <timeframes> is like the original, but with linear interpolation to fix dropped frames (or crazy negative timeframes values)
 %   <matlabnowtime> is the absolute time for the first frame
 %   <mristarttime> is time in seconds (relative to the time of the first frame)
 %     that the experiment was started
@@ -53,6 +53,9 @@ function results = ptviewmoviecheck2(timeframes,timekeys,triggerkeys,deltatime,w
 % [timeframes,timekeys] = ptviewmovie(uint8(255*rand(100,100,3,100)),[],[],2,[],[],[],[],[],0);
 % ptoff;
 % results = ptviewmoviecheck2(timeframes,timekeys);
+
+% History:
+% - 2026/11/20 - ensure freak negative timeframes are interpolated over
 
 %% Setup
 
@@ -142,9 +145,10 @@ results.donetime = donetime;
 
 %% Interpolate over dropped frames
 
-% use linear interpolation to fill in the NaNs
-ii0 = find(~isnan(timeframes));
-ii1 = find(isnan(timeframes));
+% use linear interpolation to fill in the NaNs (and freak occurrences of < 0)
+isbadtf = isnan(timeframes) | timeframes<0;
+ii0 = find(~isbadtf);
+ii1 = find(isbadtf);
 timeframes(ii1) = interp1(ii0,timeframes(ii0),ii1,'linear','extrap');
 
 % record
