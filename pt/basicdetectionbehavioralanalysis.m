@@ -6,12 +6,16 @@ function results = basicdetectionbehavioralanalysis(filenames,choicebutton,respo
 %   experiments that conform to a "basic detection" style task. This includes:
 %   - runvcdprf.m (137, 138, 139) [both the fixation and detection tasks are supported]
 %   - runnslook.m (134)
+%   Note that it is also possible to use this function to process .mat files with no
+%   grading of behavior; in that case, pass <choicebutton> as [].
 % <choicebutton> is like '1' indicating which button we will actually
 %   process. We ignore any button that is not <choicebutton>.
+%   Special case is [] which means no behavior is to be graded.
 % <responsewindow> is [A B] indicating number of milliseconds post-event
 %   over which a correct response is detected.  For example, [0 1000]
 %   means buttons detected in the range [0,1000] milliseconds after the
-%   triggering event are deemed to be correct.
+%   triggering event are deemed to be correct. When <choicebutton> is [],
+%   just set <responsewindow> to [].
 %
 % Check timing and analyze the behavioral data.
 % We report information to the command window and
@@ -39,6 +43,7 @@ function results = basicdetectionbehavioralanalysis(filenames,choicebutton,respo
 %   <medianrt> is the median of <rts>
 
 % history:
+% - 2026/11/25 - allow <choicebutton> to be [].
 % - 2026/11/22 - augment to support nslook. allow multiple files. add <trialinfo> output. put into knkutils.
 % - 2026/07/09 - initial version
 
@@ -73,30 +78,36 @@ for p=1:length(filenames)
   presults(p) = ptviewmoviecheck2(a1.timeframes,a1.timekeys,[],[],NaN);
 
   % sanity check that the right button was being pressed in the run
-  assert(presults(p).userkeycounts(str2double(choicebutton)) > .95 * sum(presults(p).userkeycounts));
+  if ~isempty(choicebutton)
+    assert(presults(p).userkeycounts(str2double(choicebutton)) > .95 * sum(presults(p).userkeycounts));
+  end
 
   %% Now analyze the behavior
 
   % determine when the events occurred.
   % <mainevents> will be indices of the events relative to the actual number of frames in the experiment
-  switch a1.setnum(1)
-  case {137 138 139}
+  if ~isempty(choicebutton)
+    switch a1.setnum(1)
+    case {137 138 139}
 
-    % fixation task
-    if ~isempty(regexp(a1.setupscript,'fixationsubjectinstructions'))
-      mainevents = find(diff(a1.fixationorder(2:end-2)==-1)==1) + 1;  % indices of transitions from some other color to red
-    % detection task
-    elseif ~isempty(regexp(a1.setupscript,'detectionsubjectinstructions'))
-      mainevents = find(a1.targetoccurrence);  % indices of onsets of the target object
-    else
-      error('could not detect what task this is!');
+      % fixation task
+      if ~isempty(regexp(a1.setupscript,'fixationsubjectinstructions'))
+        mainevents = find(diff(a1.fixationorder(2:end-2)==-1)==1) + 1;  % indices of transitions from some other color to red
+      % detection task
+      elseif ~isempty(regexp(a1.setupscript,'detectionsubjectinstructions'))
+        mainevents = find(a1.targetoccurrence);  % indices of onsets of the target object
+      else
+        error('could not detect what task this is!');
+      end
+  
+    case {134}
+  
+      mainevents = find(diff(sum(a1.trialpattern,2))==1) + 1;  % indices of onset of stimuli
+      assert(isequal(a1.classorder,1:length(a1.classorder)));
+
     end
-  
-  case {134}
-  
-    mainevents = find(diff(sum(a1.trialpattern,2))==1) + 1;  % indices of onset of stimuli
-    assert(isequal(a1.classorder,1:length(a1.classorder)));
-
+  else
+    mainevents = [];
   end
 
   % <eventtimes> will be the precise times that these events occurred
@@ -111,9 +122,11 @@ for p=1:length(filenames)
   buttonpressed0 = presults(p).buttonpressed;
 
   % ignore irrelevant buttons
-  ok = ismember(buttonpressed0,choicebutton);
-  buttontimes0 = buttontimes0(ok);
-  buttonpressed0 = buttonpressed0(ok);
+  if ~isempty(choicebutton)
+    ok = ismember(buttonpressed0,choicebutton);
+    buttontimes0 = buttontimes0(ok);
+    buttonpressed0 = buttonpressed0(ok);
+  end
 
   % process each event
   for q=1:length(eventtimes)
